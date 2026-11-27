@@ -25,10 +25,10 @@ jobs:
             platform: darwin-x86_64
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
@@ -44,7 +44,7 @@ jobs:
           ./smoke/arc/bin/arc --version
           ./smoke/arc/bin/arc scan core --format json > /dev/null
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: arc-standalone-${{ matrix.platform }}
           path: cli/build/distributions/arc-standalone-*-${{ matrix.platform }}.tar.gz
@@ -56,17 +56,17 @@ jobs:
     env:
       JETBRAINS_MARKETPLACE_TOKEN: ${{ secrets.JETBRAINS_MARKETPLACE_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
           cache: gradle
 
       - name: Set up Node.js 24
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24
 
@@ -81,7 +81,7 @@ jobs:
         run: ./gradlew -ParcdriftVersion="${GITHUB_REF_NAME#v}" test :arcdrift-cli:distTar :arcdrift-cli:distZip :arcdrift-intellij:buildPlugin :arcdrift-intellij:verifyPlugin
 
       - name: Download standalone CLI archives
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: arc-standalone-*
           path: standalone
@@ -115,7 +115,7 @@ jobs:
           fi
 
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
           files: release-artifacts/*
