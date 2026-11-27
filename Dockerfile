@@ -18,7 +18,7 @@ RUN chmod +x ./gradlew \
     && ./gradlew :arcdrift-cli:buildJlinkDist --no-daemon
 
 # Stage 2: Minimal glibc runtime image (required for Tree-sitter JNI native bindings)
-FROM ubuntu:22.04 AS runtime
+FROM ubuntu:26.04 AS runtime
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates libstdc++6 \
