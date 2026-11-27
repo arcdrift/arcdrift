@@ -5,9 +5,13 @@
 If you discover a security vulnerability in ArcDrift, please **do not** open a public GitHub issue.
 
 - **GitHub:** Report privately via **Security → Advisories → Report a vulnerability** on the repository.
-- **Email:** Send details (reproduction steps, affected version, and impact) to `security@arcdrift.dev`.
+- **Email:** Send details (reproduction steps, affected version, and impact) to `hello@arcdrift.dev` (subject: "SECURITY").
 
 We will acknowledge receipt within 48 hours and coordinate a fix and disclosure timeline.
+
+## Supported Versions
+
+Security fixes are provided for the latest released minor version (currently `0.1.x`).
 
 ## Security & Privacy Design
 
