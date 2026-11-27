@@ -77,3 +77,36 @@ jobs:
         run: |
           test -f "${{ steps.arcdrift.outputs.report-path }}"
           echo "passed=${{ steps.arcdrift.outputs.passed }}"
+
+  docker:
+    name: Docker image build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build image
+        run: docker build -t arcdrift-ci .
+
+      - name: Smoke-test image
+        run: docker run --rm arcdrift-ci --version
+
+  plugin-verify:
+    name: IntelliJ plugin verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Verify plugin against target IDE versions
+        run: ./gradlew :arcdrift-intellij:verifyPlugin
