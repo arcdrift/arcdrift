@@ -1,6 +1,8 @@
 package dev.arcdrift.cli
 
+import com.github.ajalt.clikt.core.parse
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.ProgramResult
 import com.github.ajalt.clikt.core.UsageError
 import com.github.ajalt.clikt.core.subcommands
@@ -46,10 +48,9 @@ private val prettyJson = Json {
 class ArcRootCommand(
     commandName: String = "arc",
     versionString: String? = null
-) : CliktCommand(
-    name = commandName,
-    help = "ArcDrift — The AI Architecture Control Plane, Spec-and-Verify Engine & MCP Server."
-) {
+) : CliktCommand(name = commandName) {
+    override fun help(context: Context): String = "ArcDrift — The AI Architecture Control Plane, Spec-and-Verify Engine & MCP Server."
+
     init {
         versionOption(versionString ?: ArcRootCommand::class.java.`package`?.implementationVersion ?: "0.1.0")
     }
@@ -57,10 +58,9 @@ class ArcRootCommand(
     override fun run() = Unit
 }
 
-class ScanCommand : CliktCommand(
-    name = "scan",
-    help = "Scans a polyglot repository (Kotlin, Java, TypeScript, Python) and outputs its .arc.mmd architecture graph."
-) {
+class ScanCommand : CliktCommand(name = "scan") {
+    override fun help(context: Context): String = "Scans a polyglot repository (Kotlin, Java, TypeScript, Python) and outputs its .arc.mmd architecture graph."
+
     private val dir by argument(help = "Repository root directory to scan").default(".")
     private val format by option("-f", "--format", help = "Output format: mmd | json").default("mmd")
     private val output by option("-o", "--output", help = "Output file path")
@@ -97,10 +97,9 @@ class ScanCommand : CliktCommand(
     }
 }
 
-class CheckCommand : CliktCommand(
-    name = "check",
-    help = "Verifies architectural compliance (cycles, .arc.mmd boundary rules, and cross-language contracts)."
-) {
+class CheckCommand : CliktCommand(name = "check") {
+    override fun help(context: Context): String = "Verifies architectural compliance (cycles, .arc.mmd boundary rules, and cross-language contracts)."
+
     private val dir by argument(help = "Repository root directory").default(".")
     private val spec by option("-s", "--spec", help = "Explicit .arc.mmd specification file")
     private val generateArchunit by option("--generate-archunit", help = "Path to output generated JUnit5 ArchUnit test file")
@@ -199,10 +198,9 @@ class CheckCommand : CliktCommand(
     }
 }
 
-class DiffCommand : CliktCommand(
-    name = "diff",
-    help = "Computes the visual architecture diff and upstream blast radius between a baseline .arc.mmd spec and current directory."
-) {
+class DiffCommand : CliktCommand(name = "diff") {
+    override fun help(context: Context): String = "Computes the visual architecture diff and upstream blast radius between a baseline .arc.mmd spec and current directory."
+
     private val baselineSpec by argument(help = "Path to baseline .arc.mmd file")
     private val currentDir by argument(help = "Path to current repository directory or .arc.mmd file").default(".")
     private val format by option("-f", "--format", help = "Output format: markdown | mmd | json").default("markdown")
@@ -274,10 +272,9 @@ class DiffCommand : CliktCommand(
     }
 }
 
-class SliceCommand : CliktCommand(
-    name = "slice",
-    help = "Extracts a compact semantic slice of the repository architecture around a scope query."
-) {
+class SliceCommand : CliktCommand(name = "slice") {
+    override fun help(context: Context): String = "Extracts a compact semantic slice of the repository architecture around a scope query."
+
     private val dir by argument(help = "Repository root directory").default(".")
     private val scope by option("-s", "--scope", help = "Scope substring (package, class, or component name)")
     private val level by option("-l", "--level", help = "Maximum C4 level (L1_SYSTEM, L2_CONTAINER, L3_COMPONENT, L4_CODE)")
@@ -314,10 +311,9 @@ class SliceCommand : CliktCommand(
     }
 }
 
-class McpCommand : CliktCommand(
-    name = "mcp",
-    help = "Starts the ArcDrift Model Context Protocol (MCP) JSON-RPC 2.0 server over stdio."
-) {
+class McpCommand : CliktCommand(name = "mcp") {
+    override fun help(context: Context): String = "Starts the ArcDrift Model Context Protocol (MCP) JSON-RPC 2.0 server over stdio."
+
     private val dir by argument(help = "Repository root directory to serve").default(".")
     private val upstreamContracts by option("--upstream-contracts", help = "Comma-separated or repeatable paths to upstream producer contract manifests (.arc-contracts.json)").multiple()
 
@@ -352,10 +348,9 @@ class McpCommand : CliktCommand(
     }
 }
 
-class UiCommand : CliktCommand(
-    name = "ui",
-    help = "Launches the local browser-based interactive ArcDrift architecture explorer (127.0.0.1)."
-) {
+class UiCommand : CliktCommand(name = "ui") {
+    override fun help(context: Context): String = "Launches the local browser-based interactive ArcDrift architecture explorer (127.0.0.1)."
+
     private val dir by argument(help = "Repository root directory to explore").default(".")
     private val port by option("-p", "--port", help = "Localhost TCP port to bind (0 for ephemeral)").int().default(LocalBrowserUiServer.DEFAULT_PORT)
     private val spec by option("-s", "--spec", help = "Explicit .arc.mmd specification file")
@@ -522,7 +517,7 @@ internal fun exitCodeFor(error: com.github.ajalt.clikt.core.CliktError): Int =
 fun main(args: Array<String>) {
     val cli = buildArcCli()
     try {
-        cli.parse(args)
+        cli.parse(args.toList())
     } catch (e: com.github.ajalt.clikt.core.CliktError) {
         cli.echoFormattedHelp(e)
         kotlin.system.exitProcess(exitCodeFor(e))

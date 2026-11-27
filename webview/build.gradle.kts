@@ -16,7 +16,7 @@ node {
     npmWorkDir.set(sharedNpmDir)
 }
 
-val buildWebview by tasks.registering(NpmTask::class) {
+val buildWebview = tasks.register<NpmTask>("buildWebview") {
     dependsOn(tasks.npmInstall)
     args.set(listOf("run", "build"))
     inputs.dir("src")
@@ -27,7 +27,7 @@ val buildWebview by tasks.registering(NpmTask::class) {
     outputs.dir("dist")
 }
 
-val testWebview by tasks.registering(NpmTask::class) {
+val testWebview = tasks.register<NpmTask>("testWebview") {
     dependsOn(tasks.npmInstall)
     args.set(listOf("run", "test"))
     inputs.dir("src")

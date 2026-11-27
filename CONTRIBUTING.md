@@ -5,7 +5,7 @@ Thank you for contributing to ArcDrift!
 ## Prerequisites
 
 - **JDK 21** (required for Kotlin JVM toolchain and IntelliJ Platform Gradle plugin)
-- **Node.js 22.23+ (or 24 LTS)** and `npm` (for `arcdrift-webview` and `arcdrift-docs`)
+- **Node.js 22.23+ (CI uses 24 LTS)** and `npm` (for `arcdrift-webview` and `arcdrift-docs`)
 
 ## Building & Testing Locally
 

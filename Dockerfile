@@ -14,7 +14,9 @@ COPY cli ./cli
 # Only the Gradle build script is needed for project configuration (host node_modules/dist are excluded by .dockerignore)
 COPY docs/build.gradle.kts ./docs/build.gradle.kts
 
-RUN chmod +x ./gradlew \
+# Gradle 9 requires every included project directory to exist; the IntelliJ plugin module is not part of this image.
+RUN mkdir -p ./intellij \
+    && chmod +x ./gradlew \
     && ./gradlew :arcdrift-cli:buildJlinkDist --no-daemon
 
 # Stage 2: Minimal glibc runtime image (required for Tree-sitter JNI native bindings)
