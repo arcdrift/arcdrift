@@ -1,5 +1,6 @@
 package dev.arcdrift.cli
 
+import com.github.ajalt.clikt.core.parse
 import com.github.ajalt.clikt.core.UsageError
 import dev.arcdrift.cli.reporter.MarkdownPrReporter
 import dev.arcdrift.core.analysis.BlastRadiusReport

@@ -84,7 +84,7 @@ Or run it via Docker: `docker build -t arcdrift . && docker run --rm -v "$PWD:/r
 
 ## 2. Building & Running Tests
 
-The repository includes a self-contained Gradle wrapper (`./gradlew`) that automatically provisions Node.js (`v24.22.3`) for the webview and documentation builds and targets JDK 21:
+The repository includes a self-contained Gradle wrapper (`./gradlew`) that automatically provisions Node.js (`v26.13.1`) for the webview and documentation builds and targets JDK 21:
 
 ```bash
 # Run core, MCP, CLI (including DocumentationSyncTest), and Webview test suites

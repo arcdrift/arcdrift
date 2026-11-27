@@ -19,7 +19,7 @@ export interface AgentWorkspacePanelProps {
   promptText: string;
   steps: AgentStepEvent[];
   nodes: ArcNode[];
-  timelineEndRef: React.RefObject<HTMLDivElement>;
+  timelineEndRef: React.RefObject<HTMLDivElement | null>;
   onToggleConfigExpanded: () => void;
   onTogglePanelWide: () => void;
   onClearSteps: () => void;

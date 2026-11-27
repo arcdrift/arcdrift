@@ -51,7 +51,7 @@ val java21Launcher = javaToolchains.launcherFor {
     languageVersion.set(JavaLanguageVersion.of(21))
 }
 
-val buildJlinkDist by tasks.registering {
+val buildJlinkDist = tasks.register("buildJlinkDist") {
     group = "distribution"
     description = "Builds a self-contained zero-JRE ArcDrift CLI distribution using JDK 21 jlink."
     dependsOn(tasks.jar)
@@ -171,7 +171,7 @@ val arcdriftPlatform: String = providers.gradleProperty("arcdriftPlatform").orNu
     "$os-$arch"
 }
 
-val jlinkDistTar by tasks.registering(Tar::class) {
+val jlinkDistTar = tasks.register<Tar>("jlinkDistTar") {
     group = "distribution"
     description = "Archives the zero-JRE jlink ArcDrift CLI distribution as arc-standalone-<version>-<os>-<arch>.tar.gz."
     dependsOn(buildJlinkDist)
@@ -179,7 +179,14 @@ val jlinkDistTar by tasks.registering(Tar::class) {
     archiveClassifier.set(arcdriftPlatform)
     compression = Compression.GZIP
     archiveExtension.set("tar.gz")
-    from(layout.buildDirectory.dir("jlink"))
+    from(layout.buildDirectory.dir("jlink")) {
+        // Gradle 9 archive tasks no longer carry over POSIX modes reliably; keep launcher/runtime executables runnable.
+        eachFile {
+            if (!isDirectory && file.canExecute()) {
+                permissions { unix("rwxr-xr-x") }
+            }
+        }
+    }
 }
 
 tasks.test {

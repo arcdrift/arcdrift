@@ -22,10 +22,10 @@ jobs:
           java-version: 21
           cache: gradle
 
-      - name: Set up Node.js 24
+      - name: Set up Node.js 26
         uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: 26
 
       - name: Test & build webview
         working-directory: webview
@@ -103,10 +103,10 @@ jobs:
           java-version: 21
           cache: gradle
 
-      - name: Set up Node.js 24
+      - name: Set up Node.js 26
         uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: 26
 
       - name: Verify plugin against target IDE versions
         run: ./gradlew :arcdrift-intellij:verifyPlugin

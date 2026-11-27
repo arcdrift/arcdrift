@@ -16,7 +16,7 @@ node {
     npmWorkDir.set(sharedNpmDir)
 }
 
-val buildDocs by tasks.registering(NpmTask::class) {
+val buildDocs = tasks.register<NpmTask>("buildDocs") {
     dependsOn(tasks.npmInstall)
     args.set(listOf("run", "build"))
     inputs.dir("src")
