@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # Stage 1: Build zero-JRE standalone ArcDrift CLI (includes bundled React Flow UI + Tree-sitter grammars)
-FROM eclipse-temurin:21-jdk-jammy AS builder
+FROM eclipse-temurin:25-jdk-jammy AS builder
 
 WORKDIR /workspace
 
