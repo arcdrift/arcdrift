@@ -1,0 +1,55 @@
+---
+title: Glossary & Architectural Metrics
+description: Definitions of ArcDrift concepts, graph terminology, and exact formulas for Blast Radius and Coupling Delta.
+---
+
+This reference defines the core architectural concepts, node/edge kinds, and quantitative metrics used across the ArcDrift IDE canvas, CLI (`arc`), and MCP server (`arc mcp`).
+
+---
+
+## Architectural Concepts & Terminology
+
+| Term | Definition |
+| :--- | :--- |
+| **C4 Semantic Zoom (`L1` — `L4`)** | Progressive disclosure across four abstraction levels: **`L1_SYSTEM`** (system & external actors), **`L2_CONTAINER`** (packages & runtime containers), **`L3_COMPONENT`** (controllers, services, repositories, API clients), and **`L4_CODE`** (DTOs, methods, data classes). |
+| **`.arc.mmd` (`architecture.arc.mmd`)** | Git-friendly Mermaid `flowchart` file enriched with machine-readable `%% @arc:` directive comments storing boundary rules, Ghost Specs, and saved canvas coordinates. |
+| **Ghost Component (`GHOST_SPEC`)** | A planned interface, service, or component sketched on the canvas and stored in `architecture.arc.mmd` before any source files exist. Automatically replaced when the real type is implemented. |
+| **Port Extraction (`EXTRACT_INTERFACE`)** | Deterministic refactoring that extracts public methods of a concrete service or repository into an interface port (e.g., `OrderService` $\rightarrow$ `OrderServicePort`), implements it on the concrete class, and rewires callers. |
+| **Boundary Policy** | A rule defined via `%% @arc:rule` between `from` and `to` package/class globs: **`FORBIDDEN`**, **`ALLOWED_ONLY`**, or **`MUST_DEPEND_VIA_INTERFACE`**. |
+| **Tarjan SCC Cycle** | A circular dependency loop detected using Tarjan's Strongly Connected Components (SCC) algorithm (e.g., `OrderService` $\rightarrow$ `PaymentService` $\rightarrow$ `OrderService`). |
+| **Wire Alias** | A serialized JSON field name declared via `@JsonProperty`, `@SerialName`, `@SerializedName`, or `@Json(name = ...)` on a Kotlin/Java DTO, matched against TypeScript or Python client fields. |
+| **Contract Federation** | Cross-repository REST contract verification using `--export-contracts` on producer repositories and `--upstream-contracts` on consumer repositories. |
+| **2-Hop MCP Slice** | A token-budgeted subgraph extracted by `get_architecture_slice` (`depth=2` around matched scope nodes), including incident boundary rules and cross-language contracts. |
+
+---
+
+## Quantitative Metrics & Formulas
+
+### 1. Upstream Blast Radius (`BLAST_IMPACTED`)
+Computed by `arc diff` via reverse-BFS over the dependency graph (excluding `FORBIDDEN_RULE` edges) starting from every **added**, **modified**, or **edge-touched** component up to `--depth` hops (default `3`):
+- **What it answers:** *"If this PR changes `OrderService` or `OrderController`, which upstream services, controllers, and frontend API clients can break?"*
+- **Interpretation:** A small localized change (`0` — `2` upstream callers) is low-risk; a large blast radius reaching root `TS_CLIENT` / `REST_CONTROLLER` entrypoints signals a public contract or shared-kernel change that warrants extra review.
+
+### 2. Average Coupling Degree & Coupling Delta (%)
+ArcDrift measures the **average dependency degree** of a repository as:
+
+$$
+\text{Average Coupling} = \frac{|\text{Dependency Edges}|}{|\text{Graph Nodes}|}
+$$
+
+When comparing a branch (`current`) against a baseline (`baseline`), **Coupling Delta** is:
+
+$$
+\text{Coupling Delta (\%)} = \frac{\text{Average Coupling}_{\text{current}} - \text{Average Coupling}_{\text{baseline}}}{\text{Average Coupling}_{\text{baseline}}} \times 100
+$$
+
+- **Negative Coupling Delta (e.g., `-12.5% Decoupled`):** The change introduced cleaner abstractions (such as extracting a port interface or removing direct controller-to-repository edges).
+- **Positive Coupling Delta:** The change added new cross-component dependencies faster than new components, increasing structural coupling.
+
+### 3. Compliance Exit Codes & Severity Mapping
+
+| Check / Format | Clean Result | Violation Result |
+| :--- | :--- | :--- |
+| **`arc check`** | Exit code `0` | Exit code `1` (blocks CI merge); exit code `2` signals invalid arguments or configuration |
+| **`SARIF 2.1.0` (`--format sarif`)** | `runs[0].results = []` | `error` / `warning` for boundary rules, contract drift, and cycles (`ARCDRIFT_BOUNDARY_RULE`, `ARCDRIFT_CONTRACT_DRIFT`, `ARCDRIFT_DEPENDENCY_CYCLE`) |
+| **`SonarQube` (`--format sonar`)** | `{"issues": []}` | `RELIABILITY` / `MAINTAINABILITY` external issues for `sonar.externalIssuesReportPaths` |

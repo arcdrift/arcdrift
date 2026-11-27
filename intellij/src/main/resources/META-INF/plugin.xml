@@ -1,0 +1,59 @@
+<idea-plugin>
+    <id>dev.arcdrift.guardrails</id>
+    <name>ArcDrift</name>
+    <vendor email="support@arcdrift.dev" url="https://arcdrift.dev">ArcDrift</vendor>
+
+    <description><![CDATA[
+      <p>Polyglot contract guardrails, C4 canvas &amp; MCP verification for JVM &#8596; TypeScript/Python teams.</p>
+      <p><b>ArcDrift</b> is a polyglot architecture control plane, source-inferred cross-language contract verifier, and Model Context Protocol (MCP) server for IntelliJ IDEA.</p>
+      <ul>
+        <li><b>Cross-Language Contract &amp; Boundary Guardrails:</b> Catch broken REST/Kafka routes and DTO field drift (including <code>@JsonProperty</code> and <code>@SerialName</code> wire aliases) across Kotlin/Java, FastAPI, TypeScript, and Python before merge.</li>
+        <li><b>Interactive C4 &amp; Class Architecture Canvas:</b> Semantic zoom from Containers &amp; Packages down to Spring Boot / Ktor Components and Classes.</li>
+        <li><b>Deterministic PSI Refactoring:</b> Extract interfaces, move classes, rename symbols, and wire dependencies with single-step Undo/Redo.</li>
+        <li><b>MCP Verification for Coding Agents:</b> Give Claude Code, Cursor, and JetBrains Junie architecture slices and pre-handoff compliance checks.</li>
+      </ul>
+    ]]></description>
+
+    <change-notes><![CDATA[
+      <ul>
+        <li><b>0.1.0:</b> Initial release — Polyglot AST/PSI scanner, cross-language REST/Kafka contract verification, interactive C4 JCEF canvas, deterministic PSI refactorings, and OpenAI-compatible Self-Healing Agent workspace.</li>
+      </ul>
+    ]]></change-notes>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+    <depends>org.jetbrains.kotlin</depends>
+
+    <extensions defaultExtensionNs="org.jetbrains.kotlin">
+        <supportsKotlinPluginMode supportsK2="true"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow
+            id="ArcDrift"
+            anchor="right"
+            icon="/icons/arcdriftToolWindow.svg"
+            factoryClass="dev.arcdrift.intellij.ui.ArcDriftToolWindowFactory"
+            secondary="false"/>
+
+        <localInspection
+            language="UAST"
+            shortName="ArcBoundaryViolation"
+            displayName="ArcDrift architectural boundary violation"
+            groupName="ArcDrift Architecture"
+            enabledByDefault="true"
+            level="ERROR"
+            implementationClass="dev.arcdrift.intellij.inspection.ArcBoundaryInspection"/>
+    </extensions>
+
+    <actions>
+        <action
+            id="dev.arcdrift.guardrails.actions.IlluminateArchitectureAction"
+            class="dev.arcdrift.intellij.actions.IlluminateArchitectureAction"
+            text="Illuminate Architecture in ArcDrift"
+            description="Open the ArcDrift Spec-and-Verify Architecture Canvas">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>

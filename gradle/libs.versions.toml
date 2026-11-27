@@ -1,0 +1,35 @@
+[versions]
+kotlin = "2.2.21"
+kotlinx-serialization = "1.7.3"
+kotlinx-coroutines = "1.9.0"
+clikt = "4.4.0"
+javaparser = "3.26.2"
+treesitter = "0.25.3"
+treesitter-kotlin = "0.3.8.1"
+treesitter-typescript = "0.23.2"
+treesitter-python = "0.23.4"
+junit-jupiter = "5.11.0"
+intellij-platform = "2.10.5"
+node-gradle = "7.1.0"
+nodejs = "24.22.3"
+
+[libraries]
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+clikt = { module = "com.github.ajalt.clikt:clikt", version.ref = "clikt" }
+javaparser-core = { module = "com.github.javaparser:javaparser-core", version.ref = "javaparser" }
+treesitter-core = { module = "io.github.bonede:tree-sitter", version.ref = "treesitter" }
+treesitter-kotlin = { module = "io.github.bonede:tree-sitter-kotlin", version.ref = "treesitter-kotlin" }
+treesitter-typescript = { module = "io.github.bonede:tree-sitter-typescript", version.ref = "treesitter-typescript" }
+treesitter-tsx = { module = "io.github.bonede:tree-sitter-tsx", version.ref = "treesitter-typescript" }
+treesitter-python = { module = "io.github.bonede:tree-sitter-python", version.ref = "treesitter-python" }
+junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit-jupiter" }
+junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params", version.ref = "junit-jupiter" }
+junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit-jupiter" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+intellij-platform = { id = "org.jetbrains.intellij.platform", version.ref = "intellij-platform" }
+node-gradle = { id = "com.github.node-gradle.node", version.ref = "node-gradle" }

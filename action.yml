@@ -1,0 +1,188 @@
+name: "ArcDrift Architecture Guardrails"
+description: "Verify architectural boundaries, dependency cycles, and cross-language REST/Kafka contracts in CI with optional SARIF and PR blast-radius comments."
+author: "ArcDrift"
+
+branding:
+  icon: "shield"
+  color: "gray-dark"
+
+inputs:
+  directory:
+    description: "Repository directory to scan and verify."
+    required: false
+    default: "."
+  spec:
+    description: "Optional explicit path to an .arc.mmd specification file."
+    required: false
+    default: ""
+  upstream-contracts:
+    description: "Optional comma-separated paths to upstream producer contract manifests (.arc-contracts.json)."
+    required: false
+    default: ""
+  format:
+    description: "Compliance report output format for arc check (text | json | sarif | sonar)."
+    required: false
+    default: "text"
+  output:
+    description: "Optional file path to write the arc check compliance report (e.g. arcdrift.sarif)."
+    required: false
+    default: ""
+  baseline-spec:
+    description: "Optional baseline .arc.mmd path to also compute an arc diff blast-radius report."
+    required: false
+    default: ""
+  diff-output:
+    description: "Optional file path to write the Markdown blast-radius diff report when baseline-spec is set."
+    required: false
+    default: "arcdrift-pr-report.md"
+  fail-on-drift:
+    description: "Fail the workflow step if arc check detects cycles, boundary rule violations, or contract drift."
+    required: false
+    default: "true"
+  arc-version:
+    description: "ArcDrift release tag to download (e.g. v0.1.0), or 'local' to build the CLI from the action's own source checkout."
+    required: false
+    default: "v0.1.0"
+  release-repository:
+    description: "GitHub '<owner>/<repo>' hosting ArcDrift release assets. Defaults to the repository this action is referenced from."
+    required: false
+    default: ""
+
+outputs:
+  passed:
+    description: "'true' if arc check passed with zero violations, otherwise 'false'."
+    value: ${{ steps.run-arc.outputs.passed }}
+  report-path:
+    description: "Path to the generated compliance report file when 'output' is specified."
+    value: ${{ steps.run-arc.outputs.report_path }}
+  diff-path:
+    description: "Path to the generated Markdown PR diff report when 'baseline-spec' is specified."
+    value: ${{ steps.run-arc.outputs.diff_path }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install ArcDrift CLI
+      id: install-arc
+      shell: bash
+      env:
+        ARC_VERSION: ${{ inputs.arc-version }}
+        ARC_RELEASE_REPO: ${{ inputs.release-repository }}
+        ARC_ACTION_REPO: ${{ github.action_repository }}
+      run: |
+        set -euo pipefail
+
+        INSTALL_ROOT="${RUNNER_TEMP:-/tmp}/arcdrift-cli-${ARC_VERSION}"
+        if [ -x "$INSTALL_ROOT/arc/bin/arc" ] && [ "$ARC_VERSION" != "local" ]; then
+          echo "Using cached ArcDrift CLI ${ARC_VERSION} at $INSTALL_ROOT"
+          echo "arc_bin=$INSTALL_ROOT/arc/bin/arc" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        rm -rf "$INSTALL_ROOT"
+        mkdir -p "$INSTALL_ROOT"
+
+        if [ "$ARC_VERSION" = "local" ]; then
+          (cd "$GITHUB_ACTION_PATH" && ./gradlew :arcdrift-cli:buildJlinkDist --no-daemon)
+          cp -R "$GITHUB_ACTION_PATH/cli/build/jlink/arc" "$INSTALL_ROOT/arc"
+        else
+          case "$(uname -s)" in
+            Linux) OS="linux" ;;
+            Darwin) OS="darwin" ;;
+            *)
+              echo "ArcDrift prebuilt binaries are available for Linux and macOS runners only (got '$(uname -s)'). Use arc-version: local on other runners." >&2
+              exit 1
+              ;;
+          esac
+          case "$(uname -m)" in
+            x86_64|amd64) ARCH="x86_64" ;;
+            arm64|aarch64) ARCH="arm64" ;;
+            *) echo "Unsupported CPU architecture: $(uname -m)" >&2; exit 1 ;;
+          esac
+
+          REPO="${ARC_RELEASE_REPO:-${ARC_ACTION_REPO:-arcdrift/arcdrift}}"
+          ARCHIVE="arc-standalone-${ARC_VERSION#v}-${OS}-${ARCH}.tar.gz"
+          BASE_URL="https://github.com/${REPO}/releases/download/${ARC_VERSION}"
+          echo "Downloading ${BASE_URL}/${ARCHIVE}..."
+          curl -fsSL --retry 3 "${BASE_URL}/${ARCHIVE}" -o "$INSTALL_ROOT/${ARCHIVE}"
+          curl -fsSL --retry 3 "${BASE_URL}/SHA256SUMS.txt" -o "$INSTALL_ROOT/SHA256SUMS.txt"
+
+          EXPECTED="$(grep " ${ARCHIVE}\$" "$INSTALL_ROOT/SHA256SUMS.txt" | cut -d' ' -f1 || true)"
+          if [ -z "$EXPECTED" ]; then
+            echo "No checksum for ${ARCHIVE} found in SHA256SUMS.txt" >&2
+            exit 1
+          fi
+          if command -v sha256sum >/dev/null 2>&1; then
+            ACTUAL="$(sha256sum "$INSTALL_ROOT/${ARCHIVE}" | cut -d' ' -f1)"
+          else
+            ACTUAL="$(shasum -a 256 "$INSTALL_ROOT/${ARCHIVE}" | cut -d' ' -f1)"
+          fi
+          if [ "$EXPECTED" != "$ACTUAL" ]; then
+            echo "Checksum mismatch for ${ARCHIVE}: expected ${EXPECTED}, got ${ACTUAL}" >&2
+            exit 1
+          fi
+          tar -xzf "$INSTALL_ROOT/${ARCHIVE}" -C "$INSTALL_ROOT"
+        fi
+
+        chmod +x "$INSTALL_ROOT/arc/bin/arc"
+        "$INSTALL_ROOT/arc/bin/arc" --version
+        echo "arc_bin=$INSTALL_ROOT/arc/bin/arc" >> "$GITHUB_OUTPUT"
+
+    - name: Run ArcDrift Compliance Check
+      id: run-arc
+      shell: bash
+      env:
+        ARC_BIN: ${{ steps.install-arc.outputs.arc_bin }}
+        ARC_DIR: ${{ inputs.directory }}
+        ARC_SPEC: ${{ inputs.spec }}
+        ARC_UPSTREAM: ${{ inputs.upstream-contracts }}
+        ARC_FORMAT: ${{ inputs.format }}
+        ARC_OUTPUT: ${{ inputs.output }}
+        ARC_BASELINE: ${{ inputs.baseline-spec }}
+        ARC_DIFF_OUTPUT: ${{ inputs.diff-output }}
+        ARC_FAIL: ${{ inputs.fail-on-drift }}
+      run: |
+        set -euo pipefail
+
+        CHECK_ARGS=(check "$ARC_DIR" --format "$ARC_FORMAT")
+        if [ -n "$ARC_SPEC" ]; then
+          CHECK_ARGS+=(--spec "$ARC_SPEC")
+        fi
+        if [ -n "$ARC_UPSTREAM" ]; then
+          CHECK_ARGS+=(--upstream-contracts "$ARC_UPSTREAM")
+        fi
+        if [ -n "$ARC_OUTPUT" ]; then
+          CHECK_ARGS+=(--output "$ARC_OUTPUT")
+        fi
+
+        set +e
+        "$ARC_BIN" "${CHECK_ARGS[@]}"
+        CHECK_EXIT=$?
+        set -e
+
+        # Exit code 1 = architectural drift detected; any other non-zero code is a usage/runtime error
+        if [ "$CHECK_EXIT" -ne 0 ] && [ "$CHECK_EXIT" -ne 1 ]; then
+          echo "arc check failed with exit code $CHECK_EXIT" >&2
+          exit "$CHECK_EXIT"
+        fi
+
+        if [ "$CHECK_EXIT" -eq 0 ]; then
+          echo "passed=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "passed=false" >> "$GITHUB_OUTPUT"
+        fi
+        if [ -n "$ARC_OUTPUT" ] && [ -f "$ARC_OUTPUT" ]; then
+          echo "report_path=$ARC_OUTPUT" >> "$GITHUB_OUTPUT"
+        fi
+
+        if [ -n "$ARC_BASELINE" ]; then
+          DIFF_ARGS=(diff "$ARC_BASELINE" "$ARC_DIR" --format markdown --output "$ARC_DIFF_OUTPUT")
+          if [ -n "$ARC_UPSTREAM" ]; then
+            DIFF_ARGS+=(--upstream-contracts "$ARC_UPSTREAM")
+          fi
+          "$ARC_BIN" "${DIFF_ARGS[@]}"
+          echo "diff_path=$ARC_DIFF_OUTPUT" >> "$GITHUB_OUTPUT"
+        fi
+
+        if [ "$CHECK_EXIT" -ne 0 ] && [ "$ARC_FAIL" = "true" ]; then
+          exit "$CHECK_EXIT"
+        fi

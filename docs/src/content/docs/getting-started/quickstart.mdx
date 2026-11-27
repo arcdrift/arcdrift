@@ -1,0 +1,86 @@
+---
+title: 5-Minute Quickstart
+description: Walk through inspecting your architecture, spotting a broken REST contract, and healing it automatically in IntelliJ IDEA.
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+import AnnotatedScreenshot from '../../../components/AnnotatedScreenshot.astro';
+
+In this 5-minute walkthrough, you will open a full-stack project in ArcDrift, spot a broken REST route between a TypeScript client and a Kotlin Spring Boot controller, and fix it automatically using the **Self-Healing Agent**.
+
+<Steps>
+
+1. **Open Your Project in the ArcDrift Canvas**
+
+   Open your project in IntelliJ IDEA and click the **ArcDrift** tool window on the right sidebar.
+   
+   ArcDrift scans your codebase and displays your architecture at **C4 L3: Components & Contracts**:
+   - Backend components (`@RestController`, `@Service`, `@Repository`) appear as structured cards showing their package, stereotype, and primary method.
+   - Frontend TypeScript (`fetch` / `axios`) and Python (`requests` / `httpx`) API clients appear alongside the backend services they call, connected by `HTTP_CONTRACT` edges.
+
+2. **Trigger (or Inspect) a Cross-Language Route Mismatch**
+
+   If your project is currently clean (`0 Violations`), you can see ArcDrift's live contract verification in action by introducing a small intentional typo in any TypeScript or Python API call — for example, changing `/api/v1/orders/${id}` to `/api/v1/ordes/${id}` in `ordersClient.ts` while `OrderController.kt` still exposes `GET /api/v1/orders/{id}` (or by opening [`spring-petclinic/spring-petclinic-reactjs @ 4a6c26d`](https://github.com/spring-petclinic/spring-petclinic-reactjs/tree/4a6c26d99f48d8bfac97352130b9fae4feab2509), which has 5 unfixed upstream route mismatches at that commit).
+
+   As soon as you edit the route, ArcDrift highlights the broken contract in red on the canvas:
+
+   <AnnotatedScreenshot
+     src="/screenshots/contract-mismatch-violation.jpg"
+     alt="Route contract mismatch detected between ordersClient.ts and OrderController"
+     caption="Real-time REST contract drift detection between TypeScript and Kotlin"
+     badge="Contract Drift Detection"
+     callouts={[
+       {
+         number: 1,
+         title: 'Violation & Contract Summary Pill',
+         description: 'The top-left status pill shows "⛔ 1 Violation · 2 Contracts". Click this pill at any time to filter the canvas down to only violated or modified components.',
+         x: 8,
+         y: 7,
+         box: { left: 1, top: 5.5, width: 15, height: 3.5 },
+         tone: 'danger'
+       },
+       {
+         number: 2,
+         title: 'Side-by-Side Route Mismatch Details',
+         description: 'Both ordersClient.ts and OrderController explain the exact route mismatch so you can see both the caller path and the exposed backend route at a glance.',
+         x: 28,
+         y: 25,
+         box: { left: 11, top: 12, width: 34, height: 55 },
+         tone: 'danger'
+       },
+       {
+         number: 3,
+         title: 'Handoff to the Self-Healing Agent',
+         description: 'Clicking "Handoff to Agent" opens the Agent Workspace on the right with a pre-filled prompt describing the exact violation to fix.',
+         x: 52,
+         y: 7,
+         tone: 'info'
+       },
+       {
+         number: 4,
+         title: 'Ready-to-Run OpenAI-Compatible Model',
+         description: 'Connected to your configured endpoint (for example, http://localhost:11434 or https://api.openai.com) — inspecting the slice and reading ordersClient.ts automatically.',
+         x: 83,
+         y: 66,
+         box: { left: 67, top: 56, width: 32, height: 27 },
+         tone: 'info'
+       }
+     ]}
+   />
+
+3. **Run the Self-Healing Agent**
+
+   In the **Agent Workspace** on the right:
+   - Verify your endpoint (e.g., `http://localhost:11434` for Ollama or your OpenAI-compatible URL), click **Fetch Models** to pick your model, and leave API Key blank for local servers.
+   - Click **▶ Run Self-Healing Agent (30 max turns)**.
+   - Watch the activity timeline as the agent inspects your architecture slice, reads `ordersClient.ts`, corrects the route typo to `/api/v1/orders/{id}`, and runs `verify_architectural_compliance` to confirm `0 Violations`.
+
+4. **Click File Chips to Review the Code Change**
+
+   Once the agent finishes, its summary highlights every touched file as a clickable chip (`ordersClient.ts`, `OrderController.kt`, `architecture.arc.mmd`) with its language icon. Click any chip to open that file directly in the IntelliJ editor.
+
+</Steps>
+
+<Aside type="tip" title="Customizing Your Layout">
+  Drag any component card on the canvas to arrange your diagram however you like. ArcDrift remembers your manual positions across code edits and agent runs until you click **Auto-Layout**.
+</Aside>

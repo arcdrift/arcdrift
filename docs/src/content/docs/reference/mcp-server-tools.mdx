@@ -1,0 +1,168 @@
+---
+title: MCP Tools for AI Assistants
+description: Reference for the Model Context Protocol (MCP) tools ArcDrift provides to Claude Code, Cursor, Windsurf, and the built-in Self-Healing Agent.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+When you connect an AI coding assistant to `arc mcp` — or when you use the built-in **Self-Healing Agent** inside IntelliJ IDEA — ArcDrift gives the model structured tools to inspect your architecture, preview changes, refactor safely, and verify compliance.
+
+---
+
+## Available MCP Tools Overview
+
+The `arc mcp` server exposes strictly four architectural governance and refactoring tools over JSON-RPC 2.0 `stdio`:
+
+| Tool Name | Modifies Files? | What It Lets the AI Agent Do |
+| :--- | :--- | :--- |
+| [`get_architecture_slice`](#1-get_architecture_slice) | No | Fetch a focused slice of your architecture around a specific component or package (`L1_SYSTEM`, `L2_CONTAINER`, `L3_COMPONENT`, `L4_CODE`) instead of reading dozens of raw files. |
+| [`propose_structural_diff`](#2-propose_structural_diff) | No (Preview) | Test a proposed `.arc.mmd` architecture change against your rules and calculate its blast radius before writing any code. |
+| [`execute_deterministic_refactoring`](#3-execute_deterministic_refactoring) | Yes (or Preview) | Perform safe structural refactorings (`EXTRACT_INTERFACE`, `RENAME_SYMBOL`, `MOVE_CLASS_OR_PACKAGE`, `CREATE_NODE`, `ADD_DEPENDENCY`) with automatic import rewiring. |
+| [`verify_architectural_compliance`](#4-verify_architectural_compliance) | No | Check the repository for circular dependencies, `.arc.mmd` boundary rule violations (`FORBIDDEN`, `ALLOWED_ONLY`, `MUST_DEPEND_VIA_INTERFACE`), and broken REST/Kafka contracts. |
+
+<Aside type="caution" title="Strict MCP Security Boundary">
+  `arc mcp` **never** exposes arbitrary raw file-read or file-write tools over the external MCP protocol. External AI coding assistants (such as Claude Code, Cursor, or JetBrains Junie) must inspect architecture through `get_architecture_slice`, apply structural changes through `execute_deterministic_refactoring`, and prove compliance via `verify_architectural_compliance`.
+</Aside>
+
+---
+
+## How `arc mcp` Complements JetBrains Built-In MCP
+
+IntelliJ IDEA (`2025.2+`) includes a built-in MCP server for general IDE file and symbol operations (such as `rename_refactoring`). You can run `arc mcp` alongside JetBrains' built-in MCP server to give your AI assistant architectural capabilities that general IDE tools do not provide:
+- **Cross-Language REST & Event Contract Verification:** Verifies routes and serialized DTO schemas (`@JsonProperty`, `@SerialName`, cross-file TypeScript/Python DTOs) across `Kotlin`/`Java` + `FastAPI` producers and `TypeScript`/`Python` consumers via `verify_architectural_compliance`.
+- **C4 Architectural Slicing & Blast-Radius Previews:** Provides `get_architecture_slice` (at `L1_SYSTEM` — `L4_CODE`) and `propose_structural_diff` before code is written.
+- **Port Extraction & `.arc.mmd` Rule Enforcement:** Automates `EXTRACT_INTERFACE` with caller rewiring and enforces `FORBIDDEN`, `ALLOWED_ONLY`, and `MUST_DEPEND_VIA_INTERFACE` boundary rules.
+
+---
+
+## 1. `get_architecture_slice`
+
+Returns a focused subgraph of your architecture around a given package, class, or component name up to `depth` hops, including all incident dependencies, REST/Kafka contracts, and active boundary rules.
+
+### Parameters
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "scope": {
+      "type": "string",
+      "description": "Optional package, class, or component name substring to center the slice on."
+    },
+    "c4Level": {
+      "type": "string",
+      "description": "Optional maximum C4 level: L1_SYSTEM, L2_CONTAINER, L3_COMPONENT, or L4_CODE."
+    },
+    "depth": {
+      "type": "integer",
+      "description": "Hop distance from matched seed nodes (default 2)."
+    }
+  }
+}
+```
+
+---
+
+## 2. `propose_structural_diff`
+
+Allows an agent to propose a Mermaid `.arc.mmd` change and immediately see which upstream components are in the blast radius and whether the proposal violates any `FORBIDDEN`, `ALLOWED_ONLY`, or `MUST_DEPEND_VIA_INTERFACE` rules.
+
+### Parameters
+
+```json
+{
+  "type": "object",
+  "required": ["mermaidSpec"],
+  "properties": {
+    "mermaidSpec": {
+      "type": "string",
+      "description": "Proposed .arc.mmd or Mermaid flowchart definition."
+    }
+  }
+}
+```
+
+---
+
+## 3. `execute_deterministic_refactoring`
+
+Executes a structural refactoring across your codebase — updating package declarations, extracting interfaces, and rewriting imports deterministically. Set `"previewOnly": true` to simulate the change and list affected files without modifying disk.
+
+### Parameters
+
+```json
+{
+  "type": "object",
+  "required": ["command"],
+  "properties": {
+    "command": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "EXTRACT_INTERFACE",
+            "RENAME_SYMBOL",
+            "MOVE_CLASS_OR_PACKAGE",
+            "CREATE_NODE",
+            "ADD_DEPENDENCY"
+          ]
+        },
+        "sourceClassId": { "type": "string" },
+        "interfaceSimpleName": { "type": "string" },
+        "targetPackage": { "type": "string" },
+        "memberNames": { "type": "array", "items": { "type": "string" } },
+        "targetNodeId": { "type": "string" },
+        "newSimpleName": { "type": "string" },
+        "destinationPackage": { "type": "string" },
+        "fqName": { "type": "string" },
+        "kind": { "type": "string" },
+        "stereotypes": { "type": "array", "items": { "type": "string" } },
+        "targetTypeFqName": { "type": "string" },
+        "relationKind": { "type": "string" }
+      }
+    },
+    "previewOnly": {
+      "type": "boolean",
+      "description": "If true, simulates the refactoring and returns touched files without mutating disk."
+    }
+  }
+}
+```
+
+### Supported `command.type` Actions
+
+| `command.type` | Required Fields | Behavior |
+| :--- | :--- | :--- |
+| `EXTRACT_INTERFACE` | `sourceClassId`, `interfaceSimpleName`, `targetPackage` | Extracts a public interface port, makes the source class implement it, and rewires callers to depend on the interface. |
+| `MOVE_CLASS_OR_PACKAGE` | `targetNodeId`, `destinationPackage` | Moves the class file to `destinationPackage`, updates its `package` statement, and updates all referencing imports. |
+| `RENAME_SYMBOL` | `targetNodeId`, `newSimpleName` | Renames the class/interface and its file, updating all references across the project. |
+| `CREATE_NODE` | `fqName`, `kind`, `stereotypes` | Creates a new component file or adds a `GHOST_SPEC` placeholder to `architecture.arc.mmd`. |
+| `ADD_DEPENDENCY` | `sourceClassId`, `targetTypeFqName`, `relationKind` | Adds an import and dependency or implementation relationship between two types. |
+
+---
+
+## 4. `verify_architectural_compliance`
+
+Runs all architectural checks across the repository — circular dependency detection, `.arc.mmd` boundary rules (`FORBIDDEN`, `ALLOWED_ONLY`, `MUST_DEPEND_VIA_INTERFACE`), and cross-language REST/Kafka contract verification.
+
+<Aside type="tip" title="Guaranteed Verification Loop">
+  The Self-Healing Agent is instructed to always call `verify_architectural_compliance` after making edits to confirm `"passed": true` (`0 cycles, 0 rule violations, 0 contract violations`) before completing its task.
+</Aside>
+
+### Parameters & Example Output
+
+```json
+{
+  "projectName": "arcdrift-demo",
+  "passed": true,
+  "cycleCount": 0,
+  "ruleViolationCount": 0,
+  "contractViolationCount": 0,
+  "cycles": [],
+  "ruleViolations": [],
+  "contractViolations": [],
+  "summary": "Architectural compliance PASSED for 'arcdrift-demo' (0 cycles, 0 rule violations, 0 contract violations)."
+}
+```

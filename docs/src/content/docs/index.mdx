@@ -1,0 +1,100 @@
+---
+title: Welcome to ArcDrift
+description: Interactive C4 architecture canvas, real-time cross-language contract verification, and self-healing AI guardrails for IntelliJ IDEA and CI/CD.
+hero:
+  tagline: Explore your live architecture across C4 zoom levels, catch frontend-to-backend REST contract breaks as you type, and fix boundary violations in one click.
+  actions:
+    - text: 5-Minute Quickstart
+      link: /getting-started/quickstart/
+      icon: right-arrow
+    - text: Using the Self-Healing Agent
+      link: /guides/self-healing-agent/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import AnnotatedScreenshot from '../../components/AnnotatedScreenshot.astro';
+import Hero3DMasthead from '../../components/Hero3DMasthead.astro';
+import InteractiveShowroomViewer from '../../components/InteractiveShowroomViewer.astro';
+
+<Hero3DMasthead />
+
+## Live Open-Source Architecture Showroom
+
+Explore interactive `.arc.mmd` C4 architecture graphs and verified cross-language contract findings across real-world open-source repositories — switch tabs below to inspect the live Mermaid diagram or raw `.arc.mmd` specification:
+
+<InteractiveShowroomViewer />
+
+## Your Architecture, Live Inside IntelliJ IDEA
+
+ArcDrift turns your codebase into an interactive, always-up-to-date **C4 architecture canvas** directly inside IntelliJ IDEA. Instead of drawing static diagrams that go stale the next day, you can inspect real dependencies, enforce package boundaries, verify REST/Kafka contracts across languages, and hand off architectural violations to your local or cloud AI model.
+
+<AnnotatedScreenshot
+  src="/screenshots/agent-self-healed-canvas.jpg"
+  alt="ArcDrift C4 L3 Canvas and Docked Self-Healing Agent Workspace in IntelliJ IDEA"
+  caption="ArcDrift in IntelliJ IDEA — Live C4 L3 Component Canvas & Self-Healing Agent Workspace"
+  badge="Interactive Canvas + Agent"
+  callouts={[
+    {
+      number: 1,
+      title: 'C4 Zoom & Live Health Status',
+      description: 'Switch between C4 L2 (Containers & Packages), C4 L3 (Components & Contracts), and C4 L4 (Classes & Code) while tracking live Violation, Cycle, and Contract counts.',
+      x: 18,
+      y: 5,
+      box: { left: 1, top: 1, width: 34, height: 8.5 },
+      tone: 'success'
+    },
+    {
+      number: 2,
+      title: 'Frontend ↔ Backend Contract Linking',
+      description: 'Automatically connects TypeScript and Python API clients (ordersClient.ts) to the Spring Boot @RestController endpoints and @KafkaListener topics they call.',
+      x: 28,
+      y: 25,
+      box: { left: 13, top: 13, width: 30, height: 49 },
+      tone: 'info'
+    },
+    {
+      number: 3,
+      title: '1-Click Code Navigation & Port Extraction',
+      description: 'Click "Open Code" (or double-click any card) to jump straight to the source file in your editor, or click "Extract Port" to extract an interface and rewire callers.',
+      x: 35,
+      y: 59,
+      tone: 'info'
+    },
+    {
+      number: 4,
+      title: 'Connect Any Local or Cloud Model',
+      description: 'Point the Agent Workspace at your local Ollama (http://localhost:11434), LM Studio, vLLM, llama-swap, or OpenAI-compatible endpoint, then click Fetch Models. Your settings are saved automatically.',
+      x: 83,
+      y: 24,
+      box: { left: 67, top: 16, width: 32, height: 22 },
+      tone: 'info'
+    },
+    {
+      number: 5,
+      title: 'Rich Summaries with Clickable File Chips',
+      description: 'Review the agent’s reasoning in collapsible "💭 Thought process" blocks and click any file chip (ordersClient.ts, OrderController.kt, architecture.arc.mmd) to open that file in the editor.',
+      x: 83,
+      y: 82,
+      box: { left: 67, top: 68, width: 32, height: 26 },
+      tone: 'success'
+    }
+  ]}
+/>
+
+## What You Can Do with ArcDrift
+
+<CardGrid stagger>
+  <Card title="Explore Live C4 Diagrams" icon="puzzle">
+    Zoom seamlessly from high-level package containers (**C4 L2**) down to controllers, services, repositories, and API clients (**C4 L3**) or individual DTOs and methods (**C4 L4**).
+  </Card>
+  <Card title="Catch Polyglot Contract Breaks" icon="random">
+    Spot route typos, missing endpoints, and DTO field mismatches (including `@JsonProperty` and `@SerialName` wire aliases and cross-file DTO imports) between TypeScript (`fetch` / `axios`), Python (`FastAPI` / `requests` / `httpx`), and Kotlin/Java (`@RestController` / Ktor) before you run your app.
+  </Card>
+  <Card title="Refactor & Self-Heal in One Click" icon="rocket">
+    Extract interfaces with **Extract Port**, sketch planned components with **+ Ghost Component**, or click **Handoff to Agent** to let your AI model repair violations and prove compliance.
+  </Card>
+  <Card title="Block Drift in Pull Requests" icon="approve-check-circle">
+    Keep rules in a Git-friendly `architecture.arc.mmd` Mermaid file, run `arc check` and `arc diff` in CI, post visual blast-radius PR comments, and generate JUnit 5 `ArchUnit` tests.
+  </Card>
+</CardGrid>

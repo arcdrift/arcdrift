@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  <style>
+    .arc-left { stroke: #09090b; }
+    .arc-right { stroke: #2563eb; }
+    @media (prefers-color-scheme: dark) {
+      .arc-left { stroke: #fafafa; }
+    }
+  </style>
+  <path class="arc-left" d="M 27.50 16.01 A 20 20 0 0 0 27.50 54.99" stroke-width="7" stroke-linecap="butt" />
+  <path class="arc-right" d="M 36.50 9.01 A 20 20 0 0 1 36.50 47.99" stroke-width="7" stroke-linecap="butt" />
+</svg>

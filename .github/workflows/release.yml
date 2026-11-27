@@ -1,0 +1,127 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  standalone:
+    name: Standalone CLI (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x86_64
+          - os: ubuntu-24.04-arm
+            platform: linux-arm64
+          - os: macos-14
+            platform: darwin-arm64
+          - os: macos-13
+            platform: darwin-x86_64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Build zero-JRE jlink distribution
+        run: ./gradlew -ParcdriftVersion="${GITHUB_REF_NAME#v}" -ParcdriftPlatform="${{ matrix.platform }}" :arcdrift-cli:jlinkDistTar --no-daemon
+
+      - name: Smoke-test packaged binary
+        run: |
+          mkdir -p smoke
+          tar -xzf cli/build/distributions/arc-standalone-*-${{ matrix.platform }}.tar.gz -C smoke
+          ./smoke/arc/bin/arc --version
+          ./smoke/arc/bin/arc scan core --format json > /dev/null
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arc-standalone-${{ matrix.platform }}
+          path: cli/build/distributions/arc-standalone-*-${{ matrix.platform }}.tar.gz
+          if-no-files-found: error
+
+  release:
+    needs: standalone
+    runs-on: ubuntu-latest
+    env:
+      JETBRAINS_MARKETPLACE_TOKEN: ${{ secrets.JETBRAINS_MARKETPLACE_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Test & build webview
+        working-directory: webview
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+      - name: Verify tests, JVM CLI distributions & IntelliJ plugin
+        run: ./gradlew -ParcdriftVersion="${GITHUB_REF_NAME#v}" test :arcdrift-cli:distTar :arcdrift-cli:distZip :arcdrift-intellij:buildPlugin :arcdrift-intellij:verifyPlugin
+
+      - name: Download standalone CLI archives
+        uses: actions/download-artifact@v4
+        with:
+          pattern: arc-standalone-*
+          path: standalone
+          merge-multiple: true
+
+      - name: Collect artifacts & generate SHA-256 checksums
+        run: |
+          mkdir -p release-artifacts
+          cp standalone/*.tar.gz release-artifacts/
+          cp cli/build/distributions/*.tar.gz release-artifacts/ 2>/dev/null || true
+          cp cli/build/distributions/*.zip release-artifacts/ 2>/dev/null || true
+          cp intellij/build/distributions/*.zip release-artifacts/ 2>/dev/null || true
+          (cd release-artifacts && sha256sum * > SHA256SUMS.txt)
+          cat release-artifacts/SHA256SUMS.txt
+
+      - name: Render Homebrew formula with release checksums
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          sha_for() { grep " arc-standalone-${VERSION}-$1.tar.gz\$" release-artifacts/SHA256SUMS.txt | cut -d' ' -f1; }
+          sed \
+            -e "s/version \"[^\"]*\"/version \"${VERSION}\"/" \
+            -e "s/REPLACE_WITH_DARWIN_ARM64_SHA256/$(sha_for darwin-arm64)/" \
+            -e "s/REPLACE_WITH_DARWIN_X86_64_SHA256/$(sha_for darwin-x86_64)/" \
+            -e "s/REPLACE_WITH_LINUX_ARM64_SHA256/$(sha_for linux-arm64)/" \
+            -e "s/REPLACE_WITH_LINUX_X86_64_SHA256/$(sha_for linux-x86_64)/" \
+            -e "s#https://github.com/arcdrift/arcdrift#https://github.com/${GITHUB_REPOSITORY}#g" \
+            packaging/homebrew/arc.rb > release-artifacts/arc.rb
+          if grep -q "REPLACE_WITH_" release-artifacts/arc.rb; then
+            echo "Homebrew formula still contains placeholder checksums" >&2
+            exit 1
+          fi
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: release-artifacts/*
+
+      - name: Publish to JetBrains Marketplace
+        if: ${{ env.JETBRAINS_MARKETPLACE_TOKEN != '' }}
+        env:
+          JETBRAINS_MARKETPLACE_TOKEN: ${{ secrets.JETBRAINS_MARKETPLACE_TOKEN }}
+        run: ./gradlew -ParcdriftVersion="${GITHUB_REF_NAME#v}" :arcdrift-intellij:publishPlugin

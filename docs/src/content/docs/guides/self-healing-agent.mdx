@@ -1,0 +1,109 @@
+---
+title: Using the Self-Healing Agent
+description: Hand off architectural violations, broken contracts, and Ghost Components to your local or cloud AI model and navigate modified files with clickable file chips.
+---
+
+import AnnotatedScreenshot from '../../../components/AnnotatedScreenshot.astro';
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+When ArcDrift detects a boundary violation, circular dependency, or broken REST contract — or when you sketch a new **Ghost Component** on the canvas — you can hand the task directly to the built-in **Self-Healing Agent Workspace** for 1-click contract and boundary auto-repair.
+
+The Agent Workspace works with any OpenAI-compatible server, including **`llama-swap`**, **`llama.cpp` (`llama-server`)**, **Ollama**, **LM Studio**, **vLLM**, and **OpenAI**. If you prefer to use an external AI coding assistant (such as Claude Code, Cursor, or JetBrains Junie), you can connect it to the [`arc mcp` server](/reference/mcp-server-tools/) instead.
+
+---
+
+## Inside the Agent Workspace
+
+<AnnotatedScreenshot
+  src="/screenshots/agent-self-healed-canvas.jpg"
+  alt="Docked Self-Healing Agent Workspace with Markdown summary and clickable file chips"
+  caption="Self-Healing Agent Workspace After Repairing a Cross-Language Route Violation"
+  badge="Self-Healing Agent"
+  callouts={[
+    {
+      number: 1,
+      title: 'Docked Split-Pane Workspace',
+      description: 'Docks alongside the C4 canvas so you can inspect the architecture graph and live agent activity side by side, with quick toggles for Hide Config, Wide View, Clear, and Close.',
+      x: 83,
+      y: 13,
+      box: { left: 67, top: 11, width: 32, height: 4 },
+      tone: 'info'
+    },
+    {
+      number: 2,
+      title: 'Endpoint & Model Settings (Saved Automatically)',
+      description: 'Configure any OpenAI-compatible Base URL (defaults to http://localhost:11434 or OPENAI_BASE_URL) and click Fetch Models to pick your model. Any edits you make are saved immediately across IDE restarts.',
+      x: 83,
+      y: 24,
+      box: { left: 67, top: 16, width: 32, height: 22 },
+      tone: 'info'
+    },
+    {
+      number: 3,
+      title: 'Collapsible Thought Process (💭)',
+      description: 'Reasoning traces from thinking models (such as Qwen3, DeepSeek-R1, or GLM) are neatly tucked into a collapsible "💭 Thought process" section.',
+      x: 78,
+      y: 74,
+      box: { left: 68, top: 72, width: 30, height: 3.5 },
+      tone: 'info'
+    },
+    {
+      number: 4,
+      title: 'Clickable File Chips with Language Icons',
+      description: 'Every file mentioned in tool calls or the final summary (ordersClient.ts, OrderController.kt, architecture.arc.mmd) renders as an interactive chip. Click any chip to open that file in your IntelliJ editor.',
+      x: 86,
+      y: 85,
+      box: { left: 68, top: 77, width: 30, height: 15 },
+      tone: 'success'
+    },
+    {
+      number: 5,
+      title: 'Verified Clean Architecture (0 Violations)',
+      description: 'Before finishing, the agent runs verify_architectural_compliance() to confirm 0 Violations, and your canvas + open editor tabs update automatically.',
+      x: 8,
+      y: 7,
+      box: { left: 1, top: 5.5, width: 15, height: 3.5 },
+      tone: 'success'
+    }
+  ]}
+/>
+
+---
+
+## Step-by-Step: Running an Architectural Task
+
+<Steps>
+
+1. **Click `Handoff to Agent` in the Toolbar**
+
+   ArcDrift opens the **Agent Workspace** on the right side of the canvas and automatically populates the **Architectural Task Prompt** with:
+   - All active boundary and REST contract violations
+   - Any circular dependency edges that need to be broken
+   - Any planned `GHOST_SPEC` components waiting to be implemented
+
+2. **Choose Your Endpoint & Model**
+
+   - **OpenAI API Base URL:** Defaults to `http://localhost:11434` (or `OPENAI_BASE_URL` / `OPENAI_API_BASE`). If you enter a bare host without a path (such as `http://localhost:11434`), ArcDrift appends `/v1` automatically; any explicit path (`/v1`, `/v1beta/openai`, `/api/paas/v4`) is preserved verbatim before appending `/models` and `/chat/completions`.
+   - **Model ID & `Fetch Models`:** Click **Fetch Models** to query all models available on your server and select one from the dropdown (or set `OPENAI_MODEL`).
+   - **Max Turns:** Defaults to `30` (adjustable from `1` to `100`).
+   - **API Key (optional):** Leave blank for local servers (`llama-swap`, Ollama, LM Studio) or enter your Bearer key for remote providers.
+
+3. **Click `▶ Run Self-Healing Agent`**
+
+   During the run, you can watch each turn in real time:
+   - The agent queries your architecture graph (`get_architecture_slice`), reads relevant files (`read_project_file`), applies deterministic refactorings (`execute_deterministic_refactoring`) or targeted edits (`write_project_file`), and runs `verify_architectural_compliance` to prove all violations are resolved.
+   - You can stop a run at any time by clicking **`■ Stop Agent`**.
+
+4. **Navigate to Modified Files via File Chips**
+
+   Click any file chip in the tool call cards or the final Markdown summary:
+   - **TypeScript (`TS` / `TSX`):** Opens `.ts` / `.tsx` files (e.g., `ordersClient.ts`)
+   - **Kotlin (`KT`) & Java (`J`):** Opens `.kt` / `.java` classes at the exact line (e.g., `OrderController.kt`)
+   - **Python (`PY`):** Opens `.py` consumers
+   - **Architecture Spec (`ARC`):** Clicking `architecture.arc.mmd` (or `.arc.mmd`) opens your primary `architecture.arc.mmd` specification file in the editor and highlights it in the Project Explorer.
+
+</Steps>
+
+<Aside type="tip" title="Automatic Model Fallback on Local Servers">
+  If you type a shorthand model name or if a model configured in `llama-swap` fails to start on Turn 1, ArcDrift automatically matches or falls back to a working model on your endpoint and updates your saved Model ID.
+</Aside>

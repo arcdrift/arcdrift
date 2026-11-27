@@ -1,0 +1,79 @@
+---
+title: Installation & Setup
+description: Install the ArcDrift plugin in IntelliJ IDEA, set up the arc CLI, and connect your preferred AI model.
+---
+
+import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+You can use ArcDrift in three ways:
+1. **Inside IntelliJ IDEA** (Unified Distribution `2025.3+`) for interactive C4 architecture exploration, real-time cross-language contract diagnostics, 1-click refactoring, and the built-in **Self-Healing Agent Workspace**.
+2. **With External AI Coding Assistants** (Claude Code, Cursor, JetBrains Junie, Windsurf) via the `arc mcp` Model Context Protocol server.
+3. **From the Terminal or CI/CD** using the `arc` command-line tool (`arc scan`, `arc check`, `arc diff`, and `arc slice`).
+
+---
+
+## Requirements
+
+- **IntelliJ IDEA 2025.3+** (Unified Distribution, build `253+`)
+- **Java 21+** (for running the standalone `arc` CLI and `arc mcp` server in terminal or CI environments)
+- *(Optional)* A local or cloud OpenAI-compatible model endpoint — such as **`llama-swap`**, **`llama.cpp`**, **Ollama**, **LM Studio**, **vLLM**, or **OpenAI** — if you want to use the built-in **Self-Healing Agent Workspace**.
+
+---
+
+## 1. Install the IntelliJ IDEA Plugin
+
+<Steps>
+
+1. **Install the Plugin Archive**
+
+   <Tabs>
+     <TabItem label="From IntelliJ Settings">
+       1. Open **Settings / Preferences** (`Ctrl+Alt+S` or `Cmd+,`) → **Plugins**.
+       2. Click the gear icon (`⚙️`) at the top and choose **Install Plugin from Disk…**.
+       3. Select `arcdrift-intellij-<version>.zip` and click **OK**.
+       4. Restart IntelliJ IDEA if prompted.
+     </TabItem>
+     <TabItem label="Build from Source">
+       If you cloned the ArcDrift repository, build the plugin distribution with Gradle:
+       ```bash
+       ./gradlew :arcdrift-intellij:buildPlugin
+       ```
+       The installable zip archive is created in `intellij/build/distributions/`.
+     </TabItem>
+   </Tabs>
+
+2. **Open the ArcDrift Tool Window**
+
+   Open any Kotlin, Java, TypeScript, or Python project in IntelliJ IDEA, then either:
+   - Click the **ArcDrift** tab on the right-hand tool window bar, or
+   - Select **Tools → Illuminate Architecture in ArcDrift** (also available by right-clicking inside any editor tab).
+
+3. **Connect Your AI Model (Optional)**
+
+   Click **Handoff to Agent** in the top-right toolbar of the ArcDrift view to open the **Agent Workspace**:
+   - **OpenAI API Base URL:** Defaults to `http://localhost:11434` (or `OPENAI_BASE_URL` / `OPENAI_API_BASE`) for Ollama, and works with LM Studio (`http://localhost:1234/v1`), `llama-swap` (`http://localhost:8080`), vLLM, or OpenAI (`https://api.openai.com/v1`).
+   - **Model ID:** Click **Fetch Models** to query `/v1/models` from your server and pick any available model from the dropdown (or enter a model ID / set `OPENAI_MODEL`).
+   - **API Key (optional):** Leave empty for local servers, or paste your Bearer token for cloud endpoints.
+
+</Steps>
+
+<Aside type="tip" title="Settings Saved Automatically">
+  Any changes you make to **OpenAI API Base URL**, **Model ID**, **Max Turns**, or **API Key** are saved immediately in IntelliJ IDEA and restored automatically across IDE restarts.
+</Aside>
+
+---
+
+## 2. Install the `arc` Command-Line Tool
+
+Use the `arc` CLI to check architectural rules in CI pipelines, generate pull-request blast-radius reports, or expose ArcDrift as an MCP server for external coding agents (Claude Desktop, Cursor, Windsurf).
+
+```bash
+# Install the standalone CLI binary into cli/build/install/arc/bin/arc
+./gradlew :arcdrift-cli:installDist
+
+# Add it to your PATH (or invoke it directly)
+export PATH="$PWD/cli/build/install/arc/bin:$PATH"
+
+# Verify your project from the terminal
+arc check /path/to/your/project
+```

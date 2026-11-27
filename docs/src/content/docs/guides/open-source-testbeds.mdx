@@ -1,0 +1,58 @@
+---
+title: Sample Projects to Try
+description: Recommended open-source projects for trying out ArcDrift's C4 zoom, REST contract matching, boundary guardrails, and Self-Healing Agent.
+---
+
+import { Steps } from '@astrojs/starlight/components';
+import InteractiveShowroomViewer from '../../../components/InteractiveShowroomViewer.astro';
+
+Want to test ArcDrift on a realistic codebase right away? Because ArcDrift analyzes **Kotlin**, **Java**, **TypeScript / React / Angular (`.ts`, `.tsx`)**, and **Python (FastAPI / `requests` / `httpx`)**, full-stack or layered repositories are the best way to experience every feature.
+
+---
+
+## Interactive Open-Source Architecture Showroom (10-Repo Benchmark)
+
+Select any of the 10 pinned open-source repositories below to open it on GitHub, inspect real `.arc.mmd` C4 component graphs, zoom/pan the live Mermaid diagram, or copy the `.arc.mmd` spec:
+
+<InteractiveShowroomViewer />
+
+---
+
+## Step-by-Step: Trying ArcDrift on Spring PetClinic
+
+<Steps>
+1. **Clone `spring-petclinic-kotlin` at the tested commit (`d63e007`):**
+   ```bash
+   git clone https://github.com/spring-petclinic/spring-petclinic-kotlin.git
+   cd spring-petclinic-kotlin
+   git checkout d63e00783b70492ce8643eda0f995d76d06f8364
+   ```
+
+2. **Open the Project in IntelliJ IDEA:**
+   - Choose **File -> Open...** (or click **Open** on the IntelliJ Welcome screen) and select the cloned `spring-petclinic-kotlin` directory (or select `build.gradle.kts` and choose **Open as Project**).
+   - Wait for the Gradle sync and initial indexing to finish so Kotlin PSI and Spring symbols are resolved.
+
+3. **Open the ArcDrift Tool Window:**
+   - Click **ArcDrift** on the right sidebar in IntelliJ IDEA.
+   - Switch the zoom dropdown between **`C4 L2: Containers & Packages`**, **`C4 L3: Components & Contracts`**, and **`C4 L4: Classes & Code`**.
+
+4. **Add a Layer Boundary Rule:**
+   - Click **`+ Boundary Rule`** in the toolbar (or edit `architecture.arc.mmd`) to forbid controllers from calling repositories directly:
+   ```mermaid
+   flowchart TB
+     %% @arc:project name="spring-petclinic"
+     %% @arc:rule id="no-controller-to-repo" name="Controllers Must Use Services" from="*.owner.*Controller" to="*.owner.*Repository" policy="FORBIDDEN" rationale="Controllers should delegate to transactional services or extracted ports."
+   ```
+
+5. **Test Cross-Language Contract Drift:**
+   - Create a small TypeScript client file `src/frontend/vetClient.ts` with an intentional typo in the endpoint URL:
+   ```typescript
+   export async function fetchVets() {
+     return fetch('/api/vetz');
+   }
+   ```
+   - Watch ArcDrift flag the broken contract on the canvas in real time.
+
+6. **Heal Violations with One Click:**
+   - Click **`Extract Port`** on `OwnerRepository` to extract an interface port, or click **`Handoff to Agent`** $\rightarrow$ **`▶ Run Self-Healing Agent`** to watch your configured model repair the violation and confirm `0 Violations`.
+</Steps>

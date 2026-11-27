@@ -1,0 +1,245 @@
+---
+title: arc CLI Reference
+description: Complete command-line reference for arc scan, arc check, arc diff, arc slice, arc mcp, and arc ui, including all option and argument default values.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The **`arc` command-line tool** lets you scan repositories, enforce architectural rules in CI/CD, generate pull-request blast-radius reports, extract focused architectural slices, export JUnit 5 `ArchUnit` tests, run ArcDrift as a Model Context Protocol (MCP) server, and launch a local browser architecture explorer.
+
+---
+
+## Commands Overview
+
+```bash
+arc <subcommand> [options] [arguments]
+```
+
+| Command | Purpose |
+| :--- | :--- |
+| [`arc scan`](#arc-scan) | Scan a repository (`Kotlin`, `Java`, `TypeScript`, `Python`) and export its architecture graph as `.arc.mmd` or `.json`. |
+| [`arc check`](#arc-check) | Verify a repository against its `.arc.mmd` boundary rules, cycle detector, and polyglot REST contracts (exits `1` on failure). |
+| [`arc diff`](#arc-diff) | Compare the current working tree against a baseline `.arc.mmd` snapshot and generate a Markdown, Mermaid, or JSON blast-radius diff report. |
+| [`arc slice`](#arc-slice) | Extract a compact, token-budgeted architectural subgraph filtered by C4 level, scope substring, and hop depth. |
+| [`arc mcp`](#arc-mcp) | Start the ArcDrift Model Context Protocol (MCP) server over `stdio` for Claude Desktop, Cursor, Windsurf, or custom agents. |
+| [`arc ui`](#arc-ui) | Launch the local `127.0.0.1` interactive browser explorer for inspecting C4 diagrams, contract drift, and boundary rules in any IDE workflow. |
+
+---
+
+## `arc scan`
+
+Scans a project directory and writes the discovered architecture graph (components, dependencies, C4 levels, stereotypes, and REST/Kafka contracts).
+
+### Usage
+
+```bash
+arc scan [options] [dir]
+```
+
+### Options & Arguments
+
+| Option / Argument | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `[dir]` | Positional argument (`Path`) | `"."` | Root directory of the repository to scan. |
+| `-f, --format <fmt>` | Option (`mmd \| json`) | `"mmd"` | Output format: `"mmd"` (`.arc.mmd` Mermaid specification) or `"json"`. |
+| `-o, --output <file>` | Option (`Path`) | `None` *(writes to `stdout`)* | Optional file path to write the serialized architecture graph (for example, `architecture.arc.mmd`). |
+| `--export-contracts <file>` | Option (`Path`) | `None` *(disabled)* | Optional file path to write an exported producer contracts manifest (`.arc-contracts.json`) for multi-repository contract federation. |
+| `--upstream-contracts <files>` | Option (`String`) | `None` *(disabled)* | Comma-separated or repeatable paths to upstream producer contract manifests (`.arc-contracts.json`) for multi-repository contract linking. |
+
+### Example
+
+```bash
+# Scan the current repository and write architecture.arc.mmd
+arc scan . --format mmd --output architecture.arc.mmd
+```
+
+---
+
+## `arc check`
+
+Verifies your project against its `.arc.mmd` boundary rules, checks for circular dependencies, validates cross-language REST/Kafka contracts, and exits with code `1` if any violations are found.
+
+### Usage
+
+```bash
+arc check [options] [dir]
+```
+
+### Options & Arguments
+
+| Option / Argument | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `[dir]` | Positional argument (`Path`) | `"."` | Root directory of the repository to verify. |
+| `-s, --spec <file>` | Option (`Path`) | `None` *(auto-discovers `architecture.arc.mmd` or `*.arc.mmd` in `dir`)* | Explicit path to the `.arc.mmd` specification file. |
+| `-f, --format <fmt>` | Option (`text \| json \| sarif \| sonar`) | `"text"` | Output format: `"text"` (human-readable summary), `"json"` (`ArchitecturalComplianceReport` JSON), `"sarif"` (SARIF v2.1.0 for GitHub Code Scanning), or `"sonar"` (SonarQube Generic Issue Import JSON). |
+| `-o, --output <file>` | Option (`Path`) | `None` *(writes to `stdout`)* | Optional file path to write the compliance report (for example, `arcdrift.sarif` or `arcdrift-sonar.json`). |
+| `--export-contracts <file>` | Option (`Path`) | `None` *(disabled)* | Optional file path to write an exported producer contracts manifest (`.arc-contracts.json`) for downstream repositories. |
+| `--upstream-contracts <files>` | Option (`String`) | `None` *(disabled)* | Comma-separated paths to upstream producer contract manifests (`.arc-contracts.json`) for multi-repository contract verification. |
+| `--generate-archunit <file>` | Option (`Path`) | `None` *(disabled)* | Optional file path to generate a standalone Kotlin JUnit 5 `ArchUnit` test class from your `.arc.mmd` rules. |
+| `--base-package <pkg>` | Option (`String`) | `"com.acme"` | Base package name used inside the generated JUnit 5 `ArchUnit` test class when `--generate-archunit` is provided. |
+
+### Exit Codes
+
+| Exit Code | Meaning |
+| :--- | :--- |
+| `0` | All boundary rules, cycle checks, and cross-language contracts passed (`0 Violations`). |
+| `1` | One or more boundary violations, circular dependencies, or contract mismatches were found. |
+| `2` | Invalid arguments or configuration (unknown option, missing directory/spec, invalid `--format`, unreadable upstream manifest). |
+
+### Examples
+
+```bash
+# Run as a CI gate using default directory (".") and auto-discovered .arc.mmd spec
+arc check
+
+# Verify compliance AND generate a Kotlin ArchUnit test suite
+arc check . \
+  --spec architecture.arc.mmd \
+  --base-package com.acme \
+  --generate-archunit src/test/kotlin/com/acme/ArchitectureComplianceTest.kt
+```
+
+---
+
+## `arc diff`
+
+Compares a baseline `.arc.mmd` specification against your current working tree (or another `.arc.mmd` snapshot), calculating added, modified, and removed components, upstream blast radius, and coupling delta.
+
+### Usage
+
+```bash
+arc diff [options] <baselineSpec> [currentDir]
+```
+
+### Options & Arguments
+
+| Option / Argument | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `<baselineSpec>` | Positional argument (`Path`) | *Required (no default)* | Path to the baseline `.arc.mmd` specification file to compare against. |
+| `[currentDir]` | Positional argument (`Path`) | `"."` | Path to the current repository working tree (or a target `.arc.mmd` file). |
+| `-f, --format <fmt>` | Option (`markdown \| mmd \| json`) | `"markdown"` | Output format: `"markdown"` (GitHub/GitLab PR report with Mermaid diagram), `"mmd"`, or `"json"`. |
+| `-d, --depth <int>` | Option (`Int`) | `3` | Maximum upstream hop depth for transitive blast-radius propagation. |
+| `-o, --output <file>` | Option (`Path`) | `None` *(writes to `stdout`)* | Optional file path to write the diff report (for example, `pr-comment.md`). |
+| `--upstream-contracts <files>` | Option (`String`) | `None` *(disabled)* | Comma-separated or repeatable paths to upstream producer contract manifests (`.arc-contracts.json`) for multi-repository contract diffing. |
+
+### Example
+
+```bash
+# Generate a Markdown Pull Request comment with 3-hop blast-radius analysis
+arc diff architecture.arc.mmd . --format markdown --depth 3 --output pr-comment.md
+```
+
+---
+
+## `arc slice`
+
+Extracts a focused architectural subgraph around a package, class, or component name — ideal for inspecting a specific domain module or feeding a compact JSON slice into an automated workflow.
+
+### Usage
+
+```bash
+arc slice [options] [dir]
+```
+
+### Options & Arguments
+
+| Option / Argument | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `[dir]` | Positional argument (`Path`) | `"."` | Root directory of the repository to slice. |
+| `-s, --scope <query>` | Option (`String`) | `None` *(all components)* | Case-insensitive substring matching a component ID, name, or package (for example, `"order"` or `"com.acme.payment"`). |
+| `-l, --level <c4Level>` | Option (`C4Level`) | `None` *(`L4_CODE` — all levels included)* | Maximum C4 semantic zoom level to include: `L1_SYSTEM`, `L2_CONTAINER`, `L3_COMPONENT`, or `L4_CODE`. |
+| `-d, --depth <int>` | Option (`Int`) | `2` | Number of incoming and outgoing dependency hops to include around matching seed components. |
+| `--upstream-contracts <files>` | Option (`String`) | `None` *(disabled)* | Comma-separated or repeatable paths to upstream producer contract manifests (`.arc-contracts.json`) for multi-repository contract slicing. |
+
+### Example
+
+```bash
+# Extract a 2-hop C4 L3 slice around components matching "Order"
+arc slice . --scope Order --level L3_COMPONENT --depth 2
+```
+
+---
+
+## `arc mcp`
+
+Starts ArcDrift's Model Context Protocol (MCP) server over `stdio` (newline-delimited JSON-RPC 2.0) so external AI coding assistants can query your architecture and run verified refactorings.
+
+### Usage
+
+```bash
+arc mcp [dir] [options]
+```
+
+### Options & Arguments
+
+| Option / Argument | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `[dir]` | Positional argument (`Path`) | `"."` | Root directory of the repository to serve over MCP. |
+| `--upstream-contracts <files>` | Option (`String`) | `None` *(disabled)* | Comma-separated paths to upstream producer contract manifests (`.arc-contracts.json`) so MCP compliance and diff tools verify cross-repository contracts. |
+
+### Connecting Claude Desktop or Cursor
+
+Add the following entry to your MCP client configuration (`claude_desktop_config.json` or `.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "arcdrift": {
+      "command": "arc",
+      "args": ["mcp", "/absolute/path/to/your/project"]
+    }
+  }
+}
+```
+
+---
+
+## `arc ui`
+
+Starts a local `127.0.0.1` web server serving ArcDrift's interactive C4 architecture canvas in your default browser — works alongside VS Code, Cursor, Windsurf, Neovim, or any terminal workflow without requiring IntelliJ IDEA.
+
+### Usage
+
+```bash
+arc ui [options] [dir]
+```
+
+### Options & Arguments
+
+| Option / Argument | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `[dir]` | Positional argument (`Path`) | `"."` | Root directory of the repository to explore. |
+| `-p, --port <int>` | Option (`Int`) | `4747` | Localhost TCP port to bind on `127.0.0.1` (use `0` to let the OS assign an ephemeral port). |
+| `-s, --spec <file>` | Option (`Path`) | `None` *(auto-discovers `architecture.arc.mmd` or `*.arc.mmd` in `dir`)* | Explicit path to the `.arc.mmd` specification file. |
+| `--upstream-contracts <files>` | Option (`String`) | `None` *(disabled)* | Comma-separated or repeatable paths to upstream producer contract manifests (`.arc-contracts.json`) for multi-repository visualization. |
+| `--no-open` | Flag (`Boolean`) | `false` | Start the local server without automatically opening a browser tab. |
+
+### Example
+
+```bash
+# Open the interactive architecture canvas on http://127.0.0.1:4747
+arc ui .
+
+# Run headless on a custom port without auto-launching a browser
+arc ui . --port 5050 --no-open
+```
+
+---
+
+## `.arcdriftignore` Configuration
+
+Place a `.arcdriftignore` file at the repository root to exclude generated directories or allowlist third-party external APIs and webhooks during `arc scan`, `arc check`, `arc diff`, `arc slice`, `arc mcp`, and `arc ui`:
+
+```text
+# Exclude generated or vendored source trees
+generated/**
+vendor/
+
+# Allowlist external SaaS hosts that are not implemented in this repo
+host:api.opsgenie.com
+host:*.zoom.us
+
+# Allowlist external or gateway-handled routes
+route:/v2/billing/**
+route:POST /webhooks/**
+```

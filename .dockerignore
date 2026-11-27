@@ -1,0 +1,18 @@
+# Keep the Docker build context small and platform-neutral: never ship host build outputs,
+# Gradle caches, or host-native node_modules (esbuild/rollup binaries) into the Linux builder.
+.git
+.github
+.gradle
+.gradle-user-home
+.idea
+.vscode
+**/build
+**/dist
+**/out
+**/node_modules
+**/.astro
+**/.vite
+**/coverage
+**/*.log
+.arcdrift-cache
+.arcdrift-registry

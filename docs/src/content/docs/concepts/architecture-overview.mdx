@@ -1,0 +1,48 @@
+---
+title: How ArcDrift Works
+description: Understand how ArcDrift keeps your code, C4 diagrams, architectural rules, and AI coding agents in sync.
+---
+
+import { Aside, Card, CardGrid } from '@astrojs/starlight/components';
+
+Most architecture diagrams fail for a simple reason: **they are disconnected from your code**. As soon as a developer adds a new controller, renames a route, or injects a repository into the wrong layer, the diagram on the wiki is obsolete.
+
+ArcDrift solves this with a continuous **Code ↔ Diagram ↔ Guardrail** loop that runs live inside your IDE and in your CI pipeline.
+
+---
+
+## The Four Pillars of Your ArcDrift Workflow
+
+<CardGrid>
+  <Card title="1. Live Polyglot Code Graph" icon="magnifier">
+    ArcDrift continuously analyzes your **Kotlin**, **Java**, **TypeScript / TSX**, and **Python** files — discovering Spring Boot, Ktor, and FastAPI services, JPA `@Entity` models, serialized DTO wire names (`@JsonProperty`, `@SerialName`), and HTTP/Kafka endpoints as you edit.
+  </Card>
+  <Card title="2. Git-Native Guardrails (.arc.mmd)" icon="document">
+    Your architectural boundary rules and planned components live in `architecture.arc.mmd` — a standard Mermaid flowchart file in your repository that renders natively on GitHub and GitLab.
+  </Card>
+  <Card title="3. Instant Visual Diagnostics" icon="warning">
+    Whenever code violates a boundary rule, introduces a circular dependency, or breaks a frontend-to-backend REST route, ArcDrift flags the exact component cards and dependency arrows in red.
+  </Card>
+  <Card title="4. Safe Refactoring & Self-Healing" icon="rocket">
+    Fix architectural issues either with deterministic 1-click actions (**Extract Port**, **+ Boundary Rule**) or by clicking **Handoff to Agent** so your AI model repairs the code and verifies compliance.
+  </Card>
+</CardGrid>
+
+---
+
+## What ArcDrift Checks Automatically
+
+Every time you save a file, switch branches, or run `arc check`, ArcDrift verifies three categories of architectural health:
+
+| Check Category | What It Catches | Example |
+| :--- | :--- | :--- |
+| **Package & Layer Boundaries** | Forbidden dependencies between layers or modules defined in `architecture.arc.mmd`. | `OrderController` importing `OrderRepository` directly instead of going through `OrderService`. |
+| **Circular Dependencies (Cycles)** | Multi-component or package-level dependency loops that make modules impossible to test or extract independently. | `OrderService` $\rightarrow$ `PaymentService` $\rightarrow$ `InvoiceHelper` $\rightarrow$ `OrderService`. |
+| **Cross-Language REST & Event Contracts** | Route typos, missing backend endpoints, or mismatched DTO fields between TypeScript/Python consumers and Kotlin/Java producers. | `ordersClient.ts` calling `GET /api/v1/ordes/{id}` while `OrderController.kt` exposes `GET /api/v1/orders/{id}`. |
+
+---
+
+## Staying in Sync with Your Editor
+
+- **Jump from Diagram to Code:** Double-click any component card on the canvas, click its **Open Code** button, or click any file chip in the Agent Workspace to open the exact file and line in IntelliJ IDEA.
+- **No "File Cache Conflict" Popups:** When you run a canvas refactoring or let the Self-Healing Agent edit a file that you currently have open in an IntelliJ tab, ArcDrift updates your open editor buffer cleanly in place and supports standard IDE Undo (`Ctrl+Z` / `Cmd+Z`).

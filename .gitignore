@@ -1,0 +1,42 @@
+# Gradle & Kotlin build outputs and caches
+.gradle/
+.gradle-user-home/
+.arcdrift-registry/
+.kotlin/
+.intellijPlatform/
+build/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Node, Vite & Astro build artifacts and caches
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+.astro/
+**/.astro/
+.vite/
+**/.vite/
+coverage/
+**/coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IntelliJ IDEA & local IDE metadata
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+**/out/
+
+# Archives, logs & OS artifacts
+*.tgz
+*.tar.gz
+*.zip
+*.log
+.DS_Store
+Thumbs.db
+*~
+*.swp

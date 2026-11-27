@@ -1,0 +1,51 @@
+---
+title: UI Controls & Agent Settings
+description: Reference for all ArcDrift canvas toolbar controls, keyboard/mouse shortcuts, and Agent Workspace environment variables.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+This page provides a quick lookup for every toolbar control, card badge, mouse/keyboard interaction, and configuration setting in the ArcDrift tool window.
+
+---
+
+## Toolbar Controls Reference
+
+| Control | Function |
+| :--- | :--- |
+| **C4 Zoom Dropdown** | Switches the canvas between **`C4 L2: Containers & Packages`** (`L2_CONTAINER`), **`C4 L3: Components & Contracts`** (`L3_COMPONENT`), and **`C4 L4: Classes & Code`** (`L4_CODE`). |
+| **`Filter component or @Stereotype...`** | Filters visible cards in real time by class name, package substring, or annotation stereotype (e.g., `@RestController`, `@Service`, `@Repository`). |
+| **`Filter: All Components` / `Filter: Diffs & Violations`** | Toggles between showing the entire architecture or isolating only components with active violations, diffs, or blast-radius impact. |
+| **`Mode: Apply to Code` / `Mode: Sandbox Preview`** | Chooses whether refactorings (**Extract Port**, **+ Ghost Component**) modify source files immediately or preview their impact on the canvas first. |
+| **`Grid Snap: On (20px)` / `Off`** | Toggles 20-pixel grid snapping when dragging component cards. |
+| **Status Pill (`⛔ N Violations · M Contracts`)** | Summarizes active boundary/contract violations, cycle edges, and total contracts. Clickable to toggle the **Diffs & Violations** filter. |
+| **`+ Ghost Component`** | Adds a planned `GHOST_SPEC` component card to the canvas and saves it in `architecture.arc.mmd`. |
+| **`+ Boundary Rule`** | Adds a `FORBIDDEN`, `ALLOWED_ONLY`, or `MUST_DEPEND_VIA_INTERFACE` layer guardrail rule to `architecture.arc.mmd` and immediately re-evaluates the graph. |
+| **`Auto-Layout`** | Clears any manual drag positions and re-runs hierarchical layout across the canvas. |
+| **`Refresh`** | Re-scans the project workspace and refreshes the live architecture graph on demand. |
+| **`Handoff to Agent`** | Opens the docked **Agent Workspace** on the right with a pre-built prompt covering all current violations, cycles, and Ghost Components. |
+
+---
+
+## Mouse & Keyboard Interactions
+
+| Action | Result |
+| :--- | :--- |
+| **Double-click any component card** | Opens the corresponding `.kt`, `.java`, `.ts`, or `.py` file at the component's declaration line in the IntelliJ editor and selects it in the Project Explorer. |
+| **Click `Open Code` on a card** | Jumps directly to the component's source file in the editor. |
+| **Click `Extract Port` on a card** | Extracts a public port interface (`<Name>Port`), implements it on the class, and rewires callers. |
+| **Drag any component card** | Pins the card at your chosen coordinates across live code edits and agent runs until you click **Auto-Layout**. |
+| **Click any `<FileChip />` in Agent Workspace** | Opens that file (`ordersClient.ts`, `OrderController.kt`, `architecture.arc.mmd`, etc.) at the referenced line in the IntelliJ editor. |
+
+---
+
+## Agent Workspace Settings & Environment Variables
+
+Your Agent Workspace configuration is saved automatically as you type. You can also provide defaults via standard environment variables:
+
+| Setting | Default Value | Environment Variable Fallback |
+| :--- | :--- | :--- |
+| **OpenAI API Base URL** | `http://localhost:11434` | `OPENAI_BASE_URL` or `OPENAI_API_BASE` *(bare hosts append `/v1`; explicit paths like `/v1`, `/v1beta/openai`, or `/api/paas/v4` are preserved verbatim)* |
+| **Model ID** | `""` *(empty)* | `OPENAI_MODEL` *(or selected via **Fetch Models** from `/v1/models`)* |
+| **API Key** | `""` *(empty; stored encrypted in the OS system keychain when saved)* | `OPENAI_API_KEY` |
+| **Max Turns** | `30` *(range `1` — `100`)* | `N/A` |

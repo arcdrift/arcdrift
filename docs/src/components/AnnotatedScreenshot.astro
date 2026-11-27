@@ -1,0 +1,316 @@
+---
+export interface CalloutItem {
+  number: number;
+  title: string;
+  description: string;
+  /** Pin X position in percentage (0..100) */
+  x: number;
+  /** Pin Y position in percentage (0..100) */
+  y: number;
+  /** Optional bounding box highlight { left, top, width, height } in percentage */
+  box?: {
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  };
+  tone?: 'info' | 'danger' | 'success';
+}
+
+export interface Props {
+  src: string;
+  alt: string;
+  caption: string;
+  badge?: string;
+  callouts: CalloutItem[];
+}
+
+const { src, alt, caption, badge = 'Annotated IDE Capture', callouts = [] } = Astro.props;
+---
+
+<figure class="arc-annotated-figure not-content" data-arc-lightbox-root>
+  <div class="arc-annotated-titlebar">
+    <span>{caption}</span>
+    <div class="arc-annotated-titlebar-actions">
+      <span class="arc-annotated-badge">
+        {badge}
+      </span>
+      <button
+        type="button"
+        class="arc-zoom-trigger-btn"
+        data-arc-open-lightbox
+        aria-label={`Open ${caption} in fullscreen lightbox`}
+        title="Click to zoom into fullscreen"
+      >
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path
+            d="M2.5 6V2.5H6M10 2.5H13.5V6M13.5 10V13.5H10M6 13.5H2.5V10"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <span>Fullscreen</span>
+      </button>
+    </div>
+  </div>
+
+  <div
+    class="arc-annotated-stage"
+    role="button"
+    tabindex="0"
+    data-arc-open-lightbox
+    aria-label={`Click to zoom ${caption} into fullscreen`}
+    title="Click to zoom into fullscreen (Esc to close)"
+  >
+    <img src={src} alt={alt} loading="lazy" />
+
+    <div class="arc-callout-overlays-wrap" aria-hidden="true">
+      {callouts.map((c) => (
+        <>
+          {c.box && (
+            <div
+              class={`arc-callout-box ${c.tone === 'danger' ? 'box-danger' : c.tone === 'success' ? 'box-success' : ''}`}
+              style={`left: ${c.box.left}%; top: ${c.box.top}%; width: ${c.box.width}%; height: ${c.box.height}%;`}
+            />
+          )}
+          <div
+            class={`arc-callout-pin ${c.tone === 'danger' ? 'pin-danger' : c.tone === 'success' ? 'pin-success' : ''}`}
+            style={`left: ${c.x}%; top: ${c.y}%;`}
+            title={`${c.number}. ${c.title}: ${c.description}`}
+          >
+            {c.number}
+          </div>
+        </>
+      ))}
+    </div>
+
+    <div class="arc-stage-zoom-hint" aria-hidden="true">
+      🔍 Click to zoom fullscreen
+    </div>
+  </div>
+
+  {callouts.length > 0 && (
+    <figcaption class="arc-annotated-legend">
+      {callouts.map((c) => (
+        <div class="arc-legend-item">
+          <span
+            class={`arc-legend-badge ${c.tone === 'danger' ? 'badge-danger' : c.tone === 'success' ? 'badge-success' : ''}`}
+          >
+            {c.number}
+          </span>
+          <div>
+            <strong class="arc-legend-title">{c.title}</strong>
+            <span>{c.description}</span>
+          </div>
+        </div>
+      ))}
+    </figcaption>
+  )}
+
+  <dialog class="arc-lightbox-dialog" data-arc-dialog aria-label={caption}>
+    <div class="arc-lightbox-shell">
+      <header class="arc-lightbox-header">
+        <div class="arc-lightbox-title-group">
+          <span class="arc-lightbox-title">{caption}</span>
+          <span class="arc-annotated-badge">{badge}</span>
+        </div>
+
+        <div class="arc-lightbox-controls">
+          {callouts.length > 0 && (
+            <button
+              type="button"
+              class="arc-lightbox-btn arc-lightbox-btn-active"
+              data-arc-toggle-callouts
+              title="Show or hide annotation pins and highlight boxes"
+            >
+              Hide Callouts
+            </button>
+          )}
+          <button
+            type="button"
+            class="arc-lightbox-btn"
+            data-arc-zoom-out
+            title="Zoom out (-)"
+            aria-label="Zoom out"
+          >
+            −
+          </button>
+          <button
+            type="button"
+            class="arc-lightbox-btn arc-lightbox-zoom-label"
+            data-arc-zoom-reset
+            title="Reset zoom to 100%"
+          >
+            100%
+          </button>
+          <button
+            type="button"
+            class="arc-lightbox-btn"
+            data-arc-zoom-in
+            title="Zoom in (+)"
+            aria-label="Zoom in"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            class="arc-lightbox-btn arc-lightbox-close-btn"
+            data-arc-close-lightbox
+            title="Close fullscreen (Esc)"
+            aria-label="Close fullscreen lightbox"
+          >
+            ✕ Esc
+          </button>
+        </div>
+      </header>
+
+      <div
+        class="arc-lightbox-viewport"
+        data-arc-viewport
+        tabindex="0"
+        role="region"
+        aria-label="Zoomable screenshot viewport"
+      >
+        <div class="arc-lightbox-canvas" data-arc-canvas>
+          <img src={src} alt={alt} />
+          <div class="arc-lightbox-overlays" data-arc-overlays aria-hidden="true">
+            {callouts.map((c) => (
+              <>
+                {c.box && (
+                  <div
+                    class={`arc-callout-box ${c.tone === 'danger' ? 'box-danger' : c.tone === 'success' ? 'box-success' : ''}`}
+                    style={`left: ${c.box.left}%; top: ${c.box.top}%; width: ${c.box.width}%; height: ${c.box.height}%;`}
+                  />
+                )}
+                <div
+                  class={`arc-callout-pin ${c.tone === 'danger' ? 'pin-danger' : c.tone === 'success' ? 'pin-success' : ''}`}
+                  style={`left: ${c.x}%; top: ${c.y}%;`}
+                  title={`${c.number}. ${c.title}: ${c.description}`}
+                >
+                  {c.number}
+                </div>
+              </>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {callouts.length > 0 && (
+        <footer class="arc-lightbox-footer" data-arc-footer-legend>
+          {callouts.map((c) => (
+            <div class="arc-legend-item">
+              <span
+                class={`arc-legend-badge ${c.tone === 'danger' ? 'badge-danger' : c.tone === 'success' ? 'badge-success' : ''}`}
+              >
+                {c.number}
+              </span>
+              <div>
+                <strong class="arc-legend-title-inline">{c.title}:</strong>
+                <span>{c.description}</span>
+              </div>
+            </div>
+          ))}
+        </footer>
+      )}
+    </div>
+  </dialog>
+</figure>
+
+<script>
+  function initArcDriftLightboxes() {
+    const roots = document.querySelectorAll<HTMLElement>('[data-arc-lightbox-root]');
+    roots.forEach((root) => {
+      if (root.dataset.arcLightboxBound === 'true') return;
+      root.dataset.arcLightboxBound = 'true';
+
+      const dialog = root.querySelector<HTMLDialogElement>('[data-arc-dialog]');
+      if (!dialog) return;
+
+      const openTriggers = root.querySelectorAll<HTMLElement>('[data-arc-open-lightbox]');
+      const closeBtn = dialog.querySelector<HTMLButtonElement>('[data-arc-close-lightbox]');
+      const zoomInBtn = dialog.querySelector<HTMLButtonElement>('[data-arc-zoom-in]');
+      const zoomOutBtn = dialog.querySelector<HTMLButtonElement>('[data-arc-zoom-out]');
+      const zoomResetBtn = dialog.querySelector<HTMLButtonElement>('[data-arc-zoom-reset]');
+      const toggleCalloutsBtn = dialog.querySelector<HTMLButtonElement>('[data-arc-toggle-callouts]');
+      const canvas = dialog.querySelector<HTMLElement>('[data-arc-canvas]');
+      const viewport = dialog.querySelector<HTMLElement>('[data-arc-viewport]');
+      const overlays = dialog.querySelector<HTMLElement>('[data-arc-overlays]');
+
+      let scale = 1;
+      let calloutsVisible = true;
+
+      const applyScale = (nextScale: number) => {
+        scale = Math.max(0.75, Math.min(3, Math.round(nextScale * 100) / 100));
+        if (canvas) {
+          canvas.style.width = `${scale * 100}%`;
+          canvas.style.maxWidth = scale > 1 ? 'none' : '1480px';
+          canvas.style.cursor = scale > 1 ? 'zoom-out' : 'zoom-in';
+        }
+        if (zoomResetBtn) {
+          zoomResetBtn.textContent = `${Math.round(scale * 100)}%`;
+        }
+      };
+
+      const openLightbox = () => {
+        applyScale(1);
+        dialog.showModal();
+      };
+
+      const closeLightbox = () => {
+        if (dialog.open) {
+          dialog.close();
+        }
+      };
+
+      openTriggers.forEach((trigger) => {
+        trigger.addEventListener('click', (e) => {
+          e.preventDefault();
+          openLightbox();
+        });
+        trigger.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openLightbox();
+          }
+        });
+      });
+
+      closeBtn?.addEventListener('click', closeLightbox);
+
+      zoomInBtn?.addEventListener('click', () => applyScale(scale + 0.25));
+      zoomOutBtn?.addEventListener('click', () => applyScale(scale - 0.25));
+      zoomResetBtn?.addEventListener('click', () => applyScale(1));
+
+      canvas?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyScale(scale > 1 ? 1 : 1.75);
+      });
+
+      viewport?.addEventListener('click', (e) => {
+        if (e.target === viewport) {
+          closeLightbox();
+        }
+      });
+
+      dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) {
+          closeLightbox();
+        }
+      });
+
+      toggleCalloutsBtn?.addEventListener('click', () => {
+        calloutsVisible = !calloutsVisible;
+        if (overlays) {
+          overlays.style.display = calloutsVisible ? 'block' : 'none';
+        }
+        toggleCalloutsBtn.textContent = calloutsVisible ? 'Hide Callouts' : 'Show Callouts';
+        toggleCalloutsBtn.classList.toggle('arc-lightbox-btn-active', calloutsVisible);
+      });
+    });
+  }
+
+  initArcDriftLightboxes();
+  document.addEventListener('astro:page-load', initArcDriftLightboxes);
+</script>

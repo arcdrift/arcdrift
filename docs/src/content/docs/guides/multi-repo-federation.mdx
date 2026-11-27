@@ -1,0 +1,121 @@
+---
+title: Multi-Repo Federation, SARIF & SonarQube
+description: Federate REST contracts across separate backend and frontend repositories, upload SARIF 2.1.0 to GitHub Code Scanning, and export SonarQube Generic Issues.
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+In multi-repository architectures — such as a Kotlin/Java backend repository and a separate React/TypeScript or Python consumer repository — single-repo scanning sees only half of each REST contract. ArcDrift solves this with **Multi-Repository Contract Federation** and native **SARIF 2.1.0** / **SonarQube** reporting.
+
+---
+
+## Multi-Repository Contract Federation
+
+<Steps>
+1. **Export Producer Contracts from the Backend Repository:**
+
+   Run `arc scan` with `--export-contracts` in your backend CI pipeline (or release job) to publish a lightweight JSON manifest of all `@RestController` / FastAPI / OpenAPI / TypeSpec producer routes and DTO schemas:
+
+   ```bash
+   arc scan . \
+     --format mmd \
+     --output architecture.arc.mmd \
+     --export-contracts contracts.arc.json
+   ```
+
+2. **Verify the Frontend / Consumer Repository Against Upstream Contracts:**
+
+   Pass `--upstream-contracts contracts.arc.json` to `arc check` in the consumer repository. You can pass `--upstream-contracts` multiple times if a frontend consumes multiple backend services:
+
+   ```bash
+   arc check . \
+     --spec architecture.arc.mmd \
+     --upstream-contracts ./upstream/billing-contracts.arc.json \
+     --upstream-contracts ./upstream/auth-contracts.arc.json
+   ```
+
+3. **Enable Federation in `arc mcp` for AI Assistants:**
+
+   Pass the same `--upstream-contracts` flag when starting `arc mcp` so Claude Code, Cursor, or Windsurf can verify cross-repo contracts via `verify_architectural_compliance` before opening a pull request:
+
+   ```json
+   {
+     "mcpServers": {
+       "arcdrift": {
+         "command": "arc",
+         "args": [
+           "mcp",
+           "--upstream-contracts", "./upstream/billing-contracts.arc.json",
+           "."
+         ]
+       }
+     }
+   }
+   ```
+</Steps>
+
+---
+
+## GitHub Code Scanning (`SARIF 2.1.0`)
+
+Use `--format sarif` with `arc check` to emit a standard **SARIF 2.1.0** report (`ARCDRIFT_CONTRACT_DRIFT`, `ARCDRIFT_BOUNDARY_RULE`, `ARCDRIFT_DEPENDENCY_CYCLE`) that annotates pull request diffs inline in GitHub's **Security $\rightarrow$ Code scanning** tab:
+
+```yaml
+name: ArcDrift Code Scanning
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  arcdrift-sarif:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Run ArcDrift SARIF Export
+        continue-on-error: true
+        run: |
+          arc check . \
+            --spec architecture.arc.mmd \
+            --format sarif \
+            --output arcdrift.sarif
+
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: arcdrift.sarif
+          category: arcdrift
+```
+
+<Aside type="tip" title="Fail the Job or Report Inline">
+  Remove `continue-on-error: true` if you want `arc check` to fail the workflow immediately on violations, or keep it when you want GitHub Code Scanning branch protection rules to gate merging instead.
+</Aside>
+
+---
+
+## SonarQube Generic Issue Integration (`--format sonar`)
+
+Use `--format sonar` to export violations in SonarQube's **Generic Issue Data** format (`engineId: "arcdrift"`, mapped to SonarQube `RELIABILITY` / `MAINTAINABILITY` clean-code attributes):
+
+```bash
+arc check . \
+  --spec architecture.arc.mmd \
+  --format sonar \
+  --output arcdrift-sonar-issues.json
+```
+
+Then reference the generated JSON file in `sonar-project.properties` (or pass `-Dsonar.externalIssuesReportPaths=arcdrift-sonar-issues.json` to `sonar-scanner`):
+
+```properties
+sonar.projectKey=my-org_my-service
+sonar.sources=src
+sonar.externalIssuesReportPaths=arcdrift-sonar-issues.json
+```

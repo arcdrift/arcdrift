@@ -1,0 +1,40 @@
+---
+title: Troubleshooting & FAQ
+description: Solutions for common questions around polyglot REST endpoint detection, external webhooks, local/cloud LLMs, and headless CI usage.
+---
+
+### Why wasn't a custom frontend API wrapper linked to my backend controller?
+
+ArcDrift recognizes standard `fetch()`, `axios`, Angular `HttpClient`, React Query hooks (`useApiQuery` / `useApiMutation`), `@hey-api/openapi-ts` SDKs, and Python `requests` / `httpx` / `client.*` calls out of the box.
+
+If your codebase uses a custom wrapper (for example, `myTransport.request({ path: '/api/...' })`) or constructs URLs dynamically outside template literals/constants:
+1. Check whether the wrapper exposes typed SDK methods or an OpenAPI/TypeSpec spec in the repository (`*.yaml`, `*.yml`, `*.tsp`).
+2. Use the **`Report False Positive / Suggest Repo`** link in `arc diff` PR comments (or open an issue on [`arcdrift/arcdrift`](https://github.com/arcdrift/arcdrift/issues)) with the call-site pattern so support can be added to the TypeScript or Python scanner.
+
+---
+
+### My frontend calls an external third-party URL or another microservice — how do I avoid false `Unresolved REST contract` violations?
+
+- **External microservice in another repository:** Export the producer repository's contracts with `arc scan . --export-contracts contracts.arc.json` and pass `--upstream-contracts contracts.arc.json` to `arc check` and `arc mcp`. See the [Multi-Repo Federation Guide](/guides/multi-repo-federation/).
+- **Third-party SaaS webhooks (e.g. Stripe, Zoom, Opsgenie):** Full `https://` third-party URLs are filtered automatically when they don't match internal `/api/...` routes; if a relative plugin path still triggers an unresolved contract, report it via the 1-click feedback link in `arc diff`.
+
+---
+
+### Why did my local or cloud LLM return `404` when clicking `Run Self-Healing Agent`?
+
+Check **OpenAI API Base URL** in the **Agent Workspace**:
+- Bare hosts without a path (such as `http://localhost:11434` for Ollama or `http://localhost:8080` for `llama-swap`) automatically have `/v1` appended before `/models` and `/chat/completions`.
+- If your provider uses a non-`/v1` versioned path — such as Gemini's OpenAI-compatible endpoint (`https://generativelanguage.googleapis.com/v1beta/openai`) or Zhipu/GLM (`https://open.bigmodel.cn/api/paas/v4`) — enter the full path including `/v1beta/openai` or `/api/paas/v4`. ArcDrift preserves explicit paths verbatim.
+- Always click **Fetch Models** after changing the Base URL so **Model ID** matches an active model returned by `/models`.
+
+---
+
+### Can I run ArcDrift in CI without installing IntelliJ IDEA?
+
+Yes. The **`arc` CLI** is a standalone JVM executable that analyzes Java, Kotlin, TypeScript, and Python directly from source. It requires only Java 21 in CI — no IntelliJ IDEA installation or display server is needed for `arc scan`, `arc check`, `arc diff`, `arc slice`, or `arc mcp`.
+
+---
+
+### Which `.arc.mmd` file does the IntelliJ plugin edit if I also have CI baseline snapshots?
+
+If your repository contains multiple `.arc.mmd` files (for example, `baseline.arc.mmd` and `architecture.arc.mmd`), ArcDrift always prioritizes **`architecture.arc.mmd`** when saving boundary rules, Ghost Specs, or canvas layout coordinates, and when opening `.arc.mmd` file chips in the Agent Workspace.

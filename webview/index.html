@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ArcDrift — Architecture Control Plane</title>
+    <style>
+      *, *::before, *::after {
+        box-sizing: border-box;
+      }
+      html, body, #root {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #09090b;
+        color: #f4f4f5;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      button, input, select, textarea, .react-flow {
+        font-family: inherit;
+      }
+      button,
+      select,
+      summary,
+      a,
+      [role="button"],
+      input[type="button"],
+      input[type="submit"],
+      input[type="reset"],
+      input[type="checkbox"],
+      input[type="radio"],
+      .arc-btn,
+      .react-flow__controls-button,
+      .react-flow__node,
+      .react-flow__node.selectable,
+      .react-flow__node.draggable,
+      .react-flow__edge,
+      .react-flow__edge.selectable,
+      .react-flow__edge-path,
+      .react-flow__edge-interaction {
+        cursor: pointer !important;
+      }
+      button:disabled,
+      select:disabled,
+      input:disabled {
+        cursor: not-allowed !important;
+      }
+      .arc-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 5px 11px;
+        border-radius: 6px;
+        border: 1px solid #3f3f46;
+        background: linear-gradient(180deg, #27272a 0%, #1f1f23 100%);
+        color: #e4e4e7;
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1.25;
+        cursor: pointer;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        transition: background 120ms ease, border-color 120ms ease, transform 60ms ease;
+        user-select: none;
+        white-space: nowrap;
+      }
+      .arc-btn:hover {
+        background: linear-gradient(180deg, #3f3f46 0%, #27272a 100%);
+        border-color: #52525b;
+        color: #ffffff;
+      }
+      .arc-btn:active {
+        transform: translateY(1px);
+        background: #18181b;
+      }
+      .arc-btn-active {
+        background: linear-gradient(180deg, #3f3f46 0%, #27272a 100%);
+        border-color: #71717a;
+        color: #ffffff;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      }
+      .arc-btn-primary {
+        background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+        border-color: #3b82f6;
+        color: #ffffff;
+      }
+      .arc-btn-primary:hover {
+        background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+        border-color: #60a5fa;
+      }
+      .react-flow__controls {
+        border: 1px solid #27272a !important;
+        border-radius: 6px !important;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+      }
+      .react-flow__controls-button {
+        background: #18181b !important;
+        border-bottom: 1px solid #27272a !important;
+        fill: #a1a1aa !important;
+        color: #a1a1aa !important;
+      }
+      .react-flow__controls-button:hover {
+        background: #27272a !important;
+        fill: #f4f4f5 !important;
+      }
+      .react-flow__minimap {
+        cursor: grab !important;
+        border-radius: 8px !important;
+        overflow: hidden;
+      }
+      .react-flow__minimap:active {
+        cursor: grabbing !important;
+      }
+      .react-flow__edgelabel-renderer {
+        z-index: 25 !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

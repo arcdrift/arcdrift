@@ -1,0 +1,91 @@
+---
+title: Refactoring from the Canvas
+description: Extract interfaces, create components, move classes between packages, and preview structural changes safely before applying them to your code.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+ArcDrift lets you perform structural refactorings directly from the architecture canvas — or preview their impact in **Sandbox Mode** before touching a single source file.
+
+---
+
+## Sandbox Preview Mode vs. Apply to Code
+
+In the top toolbar, click the **Mode** button to switch between:
+- **`Mode: Apply to Code`** *(Default)*: Immediately updates your `.kt`, `.java`, and `architecture.arc.mmd` files, refreshes any open editor tabs, selects the created file in the Project Explorer, and supports single-step IDE Undo (`Ctrl+Z` / `Cmd+Z`).
+- **`Mode: Sandbox Preview`**: Simulates the refactoring on the canvas and highlights affected cards with `+ ADDED` and `~ MODIFIED` badges without modifying any files on disk.
+
+---
+
+## Interactive Canvas Actions
+
+### 1. Extract an Interface Port (**`Extract Port`** Button / `EXTRACT_INTERFACE`)
+
+When a controller or service depends directly on a concrete class, you can introduce an interface boundary in one click:
+1. Click **`Extract Port`** on any `SERVICE_BEAN`, `REPOSITORY`, `REST_CONTROLLER`, `MESSAGE_LISTENER`, or `CLASS` card.
+2. ArcDrift extracts the public method signatures into a new interface (e.g., `OrderService` $\rightarrow$ `OrderServicePort`), updates the original class to implement the new interface, and rewires callers to depend on the port interface.
+
+```json
+{
+  "type": "EXTRACT_INTERFACE",
+  "sourceClassId": "com.acme.service.OrderService",
+  "interfaceSimpleName": "OrderServicePort",
+  "targetPackage": "com.acme.port",
+  "memberNames": ["findOrder"]
+}
+```
+
+### 2. Sketch or Materialize a Component (**`+ Ghost Component`** / `CREATE_NODE`)
+
+- Click **`+ Ghost Component`** in the toolbar to add a planned `GHOST_SPEC` component to `architecture.arc.mmd` while you design your architecture.
+- When invoked with a concrete kind (`INTERFACE`, `SERVICE_BEAN`, `REST_CONTROLLER`, `REPOSITORY`, `DATA_CLASS`, or `CLASS`), `CREATE_NODE` generates the source file with the appropriate package and annotations and replaces the Ghost Spec placeholder.
+
+```json
+{
+  "type": "CREATE_NODE",
+  "fqName": "com.acme.port.PaymentGatewayPort",
+  "kind": "INTERFACE",
+  "stereotypes": []
+}
+```
+
+### 3. Move a Class to Another Package (`MOVE_CLASS_OR_PACKAGE`)
+
+Relocates a Kotlin or Java class to a new package directory, updates its `package` declaration, and updates all `import` statements across the project:
+
+```json
+{
+  "type": "MOVE_CLASS_OR_PACKAGE",
+  "targetNodeId": "com.acme.controller.OrderRepositoryHelper",
+  "destinationPackage": "com.acme.repo"
+}
+```
+
+### 4. Rename a Component (`RENAME_SYMBOL`)
+
+Renames a class or interface, renames its source file, and updates all references across your repository:
+
+```json
+{
+  "type": "RENAME_SYMBOL",
+  "targetNodeId": "com.acme.service.OrderService",
+  "newSimpleName": "OrderDomainService"
+}
+```
+
+### 5. Wire a Dependency (`ADD_DEPENDENCY`)
+
+Adds an import and dependency or `implements` relationship between two components:
+
+```json
+{
+  "type": "ADD_DEPENDENCY",
+  "sourceClassId": "com.acme.controller.OrderController",
+  "targetTypeFqName": "com.acme.port.OrderServicePort",
+  "relationKind": "DEPENDS_ON"
+}
+```
+
+<Aside type="note" title="Works in Both the IDE and the Self-Healing Agent">
+  When the Self-Healing Agent needs to extract an interface, move a class, or rename a symbol, it calls these exact same deterministic refactoring operations (`execute_deterministic_refactoring`) rather than guessing imports with raw text edits.
+</Aside>

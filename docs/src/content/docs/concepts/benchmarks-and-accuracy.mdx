@@ -1,0 +1,55 @@
+---
+title: Benchmarks & Accuracy
+description: Empirical evaluation of ArcDrift across 10 real-world open-source repositories, controlled contract mutations, and MCP context-slice token reduction.
+---
+
+To prevent upstream repository changes from skewing regression measurements, every release of ArcDrift is evaluated against **fixed, pinned commits of 10 real-world open-source repositories** spanning Java Spring Boot, Spring WebFlux, Kotlin Spring Boot, Python FastAPI, Angular, Vue, React TypeScript, OpenAPI 3, and TypeSpec (`*.tsp`).
+
+---
+
+## Aggregate 10-Repository Corpus Metrics
+
+| Metric | Measured Result |
+| :--- | :--- |
+| **Repositories Evaluated** | **10** public OSS codebases *(at the pinned commits listed below)* |
+| **Total Source Files Scanned** | **7,637** |
+| **Total Graph Nodes & Edges** | **7,634** nodes · **19,956** edges |
+| **Producer & Consumer Endpoints** | **1,465** producers · **848** consumers |
+| **Linked Cross-Language Contracts** | **433** single-repo (**449** with multi-repo federation) |
+| **2-Hop MCP Slice Token Reduction** | **89.1%** mean reduction vs. raw source across all 10 repos |
+| **Controlled Mutation Recall** | **8 / 8 (`100%`)** across route typos, response DTO drift, and `@RequestBody` drift |
+| **Deterministic Refactoring Accuracy** | **5 / 5 (`100%`)** command completion, **0 PSI syntax errors** across 16 `.kt` files |
+
+---
+
+## Per-Repository Breakdown
+
+| Repository (Pinned Commit) | Stack | Files | Linked Contracts | Clean-HEAD Violations | 2-Hop Slice Reduction |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| [`spring-petclinic/spring-petclinic-reactjs @ 4a6c26d`](https://github.com/spring-petclinic/spring-petclinic-reactjs/tree/4a6c26d99f48d8bfac97352130b9fae4feab2509) | Java Spring Boot + React (`fetch`) | `118` | `8` | **`5`** *(all 5 real upstream bugs; `0` FP)* | `71.8%` |
+| [`spring-petclinic/spring-petclinic-kotlin @ d63e007`](https://github.com/spring-petclinic/spring-petclinic-kotlin/tree/d63e00783b70492ce8643eda0f995d76d06f8364) | Kotlin Spring Boot `@Controller` | `24` | `0` | **`0`** | — |
+| [`spring-petclinic/spring-petclinic-angular @ e992ba8`](https://github.com/spring-petclinic/spring-petclinic-angular/tree/e992ba8bf89a264fa4215213b855044ea1d43bb2) | Angular (`HttpClient` + `Observable<T>`) | `97` | `7` *(federated)* | **`9`** federated *(real `Pet.owner` vs `PetDto.ownerId` delta)* | `67.4%` |
+| [`jhipster/jhipster-sample-app-react @ 8853599`](https://github.com/jhipster/jhipster-sample-app-react/tree/88535990553312f138136313c1a8df254c55cb31) | Java Spring Boot + React Redux (`axios`) | `215` | `11` | **`0`** *(100% precision)* | `90.5%` |
+| [`jhipster/jhipster-sample-app @ 6b000b5`](https://github.com/jhipster/jhipster-sample-app/tree/6b000b5d23a36c45e01472471b84a44fa2464044) | Java Spring Boot + Angular (`HttpClient`) | `349` | `13` | **`2`** *(`user.service.ts` + `User.authorities` delta)* | `92.1%` |
+| [`fastapi/full-stack-fastapi-template @ aabb901`](https://github.com/fastapi/full-stack-fastapi-template/tree/aabb90126964a164e02aff39e7c385bb0598236d) | Python FastAPI + React (`@hey-api/openapi-ts`) | `125` | `15` | **`0`** *(100% precision)* | `94.8%` |
+| [`Netflix/dispatch @ dd2837e`](https://github.com/Netflix/dispatch/tree/dd2837e82a0bf5565b1b4b4b91ea30b7262d4061) | Python FastAPI + TypeScript/Vue | `664` | `43` | **`8`** *(external Opsgenie/Zoom/GitHub webhooks)* | `93.4%` |
+| [`kafbat/kafka-ui @ 73e5d40`](https://github.com/kafbat/kafka-ui/tree/73e5d409e9017bc30eae9378b1eae2cfc5ee9e9f) | Java Spring WebFlux + TypeSpec (`*.tsp`) + React | `1,050` | `16` | **`0`** *(100% precision across 1,050 files)* | `96.8%` |
+| [`gotson/komga @ db2ad64`](https://github.com/gotson/komga/tree/db2ad643c64d9199f7dd01cd3cca3ff0e7a17445) | Kotlin Spring Boot + Vue + `@hey-api/openapi-ts` | `973` | `42` | **`10`** *(across 240 consumer endpoints)* | `93.0%` |
+| [`tolgee/tolgee-platform @ 5fdc27a`](https://github.com/tolgee/tolgee-platform/tree/5fdc27a8102cbcfb4474b5e680280b28e72bff1a) | Kotlin Spring Boot + React (`useApiQuery`) | `4,022` | `285` (`294` federated) | **`13`** single-repo (**`0`** with `tolgee-cloud` federation) | `97.0%` |
+
+---
+
+## Controlled Mutation Recall (`8 / 8 = 100%`)
+
+To verify detection recall on breaking changes that compile cleanly in isolation, the benchmark suite injects 8 controlled mutations across `jhipster-sample-app-react` (`M1` — `M7`) and `full-stack-fastapi-template` (`M8`):
+
+| Mutation | Description | Detected? |
+| :--- | :--- | :--- |
+| **`M1`** | Rename `/api/operations` $\rightarrow$ `/api/operationz` in `OperationResource.java` | Caught (`Route contract mismatch`) |
+| **`M2`** | Rename response DTO field `description` $\rightarrow$ `details` in `OperationDTO.java` | Caught (`DTO field mismatch`) |
+| **`M3`** | Rename response DTO field `amount` $\rightarrow$ `totalAmount` in `OperationDTO.java` | Caught (`DTO field mismatch`) |
+| **`M4`** | Rename `/api/bank-accounts` $\rightarrow$ `/api/bank-accountz` in `BankAccountResource.java` | Caught (`Route contract mismatch`) |
+| **`M5`** | Rename `/api/labels` $\rightarrow$ `/api/tags` in `LabelResource.java` | Caught (`Route contract mismatch`) |
+| **`M6`** | Remove `GET /api/account` endpoint in `AccountResource.java` | Caught (`Unresolved REST contract`) |
+| **`M7`** | Rename `@RequestBody` field `newPassword` $\rightarrow$ `updatedPassword` in `PasswordChangeDTO.java` | Caught (`@RequestBody field mismatch`) |
+| **`M8`** | Rename Pydantic `ItemCreate` request-body field `title` $\rightarrow$ `heading` in FastAPI `models.py` | Caught (`@RequestBody field mismatch`) |

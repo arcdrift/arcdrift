@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 580" width="1100" height="580">
+  <defs>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#18181b" stroke-width="1"/>
+    </pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#71717a" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#ef4444" />
+    </marker>
+  </defs>
+  <rect width="1100" height="580" fill="#09090b" />
+  <rect width="1100" height="580" fill="url(#grid)" />
+
+  <!-- Top Toolbar -->
+  <rect x="0" y="0" width="1100" height="76" fill="#09090b" stroke="#27272a" stroke-width="1" />
+  <text x="18" y="26" fill="#fafafa" font-family="Inter, sans-serif" font-size="13" font-weight="700" letter-spacing="0.8">ARCDRIFT</text>
+  <rect x="92" y="12" width="102" height="22" rx="4" fill="#18181b" stroke="#27272a"/>
+  <text x="100" y="27" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="11">arcdrift-demo</text>
+
+  <!-- Zoom Selector -->
+  <rect x="202" y="10" width="215" height="26" rx="6" fill="#18181b" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="214" y="27" fill="#fafafa" font-family="Inter, sans-serif" font-size="12" font-weight="600">C4 L2: Containers &amp; Packages ▾</text>
+
+  <!-- Metrics Pill -->
+  <rect x="18" y="44" width="174" height="24" rx="5" fill="#1c1315" stroke="#ef4444"/>
+  <text x="30" y="60" fill="#fca5a5" font-family="Inter, sans-serif" font-size="11" font-weight="600">⛔ 1 Violation · 2 Contracts</text>
+
+  <!-- Container 1: TS Client -->
+  <rect x="410" y="100" width="280" height="105" rx="8" fill="#18181b" stroke="#52525b" stroke-width="1.5"/>
+  <text x="426" y="122" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">TS CLIENT (ROOT CONSUMER)</text>
+  <text x="426" y="142" fill="#fafafa" font-family="Inter, sans-serif" font-size="14" font-weight="700">ordersClient.ts</text>
+  <rect x="426" y="154" width="248" height="22" rx="4" fill="#09090b" stroke="#27272a"/>
+  <text x="434" y="169" fill="#d4d4d8" font-family="JetBrains Mono, monospace" font-size="11">GET /api/v1/orders/{id}</text>
+
+  <!-- Edge TS -> Controller Package -->
+  <line x1="550" y1="205" x2="550" y2="255" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)" />
+  <rect x="444" y="220" width="212" height="22" rx="4" fill="#18181b" stroke="#3f3f46"/>
+  <text x="456" y="235" fill="#d4d4d8" font-family="JetBrains Mono, monospace" font-size="10.5">HTTP_CONTRACT: GET /orders/{id}</text>
+
+  <!-- Container 2: com.acme.controller -->
+  <rect x="410" y="260" width="280" height="120" rx="8" fill="#1c1315" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="426" y="282" fill="#fca5a5" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">PACKAGE CONTAINER · VIOLATION</text>
+  <text x="426" y="302" fill="#fafafa" font-family="Inter, sans-serif" font-size="14" font-weight="700">com.acme.controller</text>
+  <text x="426" y="324" fill="#fca5a5" font-family="Inter, sans-serif" font-size="11">⛔ Rule 'no-controller-to-repo' violated</text>
+  <line x1="426" y1="336" x2="674" y2="336" stroke="#27272a" />
+  <text x="426" y="355" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="11">OrderController (rest controller)</text>
+
+  <!-- Container 3: com.acme.service -->
+  <rect x="170" y="430" width="260" height="105" rx="8" fill="#18181b" stroke="#3f3f46" stroke-width="1.5"/>
+  <text x="186" y="452" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">PACKAGE CONTAINER</text>
+  <text x="186" y="472" fill="#fafafa" font-family="Inter, sans-serif" font-size="14" font-weight="700">com.acme.service</text>
+  <line x1="186" y1="485" x2="414" y2="485" stroke="#27272a" />
+  <text x="186" y="505" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="11">OrderService, OrderServicePort</text>
+
+  <!-- Container 4: com.acme.repo -->
+  <rect x="650" y="430" width="260" height="105" rx="8" fill="#1c1315" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="666" y="452" fill="#fca5a5" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">PACKAGE CONTAINER · VIOLATION</text>
+  <text x="666" y="472" fill="#fafafa" font-family="Inter, sans-serif" font-size="14" font-weight="700">com.acme.repo</text>
+  <line x1="666" y1="485" x2="894" y2="485" stroke="#27272a" />
+  <text x="666" y="505" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="11">OrderRepository (repository)</text>
+
+  <!-- Edges from controller -->
+  <path d="M 480 380 L 320 426" stroke="#71717a" stroke-width="1.5" fill="none" marker-end="url(#arrow)" />
+  <path d="M 620 380 L 760 426" stroke="#ef4444" stroke-width="2" stroke-dasharray="6,4" fill="none" marker-end="url(#arrow-red)" />
+  <rect x="610" y="392" width="222" height="22" rx="4" fill="#1c1315" stroke="#ef4444"/>
+  <text x="622" y="407" fill="#fca5a5" font-family="JetBrains Mono, monospace" font-size="10.5">VIOLATION: no-controller-to-repo</text>
+
+  <!-- Edge service -> repo -->
+  <line x1="430" y1="482" x2="644" y2="482" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)" />
+</svg>

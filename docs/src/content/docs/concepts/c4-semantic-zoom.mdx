@@ -1,0 +1,76 @@
+---
+title: Navigating C4 Zoom Levels
+description: Switch between C4 System, Container, Component, and Code views, filter your graph, and customize your canvas layout.
+---
+
+import AnnotatedScreenshot from '../../../components/AnnotatedScreenshot.astro';
+
+Different engineering questions require different levels of detail. When onboarding a teammate or reviewing module boundaries, seeing every helper class and DTO is overwhelming; when debugging a broken REST endpoint, you need to see the exact controller and client.
+
+ArcDrift lets you switch your view of the same codebase across **four C4 zoom levels** using the dropdown in the top toolbar.
+
+---
+
+## C4 Semantic Zoom Levels
+
+| C4 Level | Toolbar Option | When to Use It | What You See |
+| :--- | :--- | :--- | :--- |
+| **`L1_SYSTEM`** | *System Context* | High-level system boundary overview (via MCP / CLI slices). | Top-level `SYSTEM` boundary and external dependencies. |
+| **`L2_CONTAINER`** | **`C4 L2: Containers & Packages`** | Reviewing package modularity, layer dependencies, and package-level rule violations. | High-level `PACKAGE` containers, `MODULE`s, and top-level frontend clients (`TS_CLIENT`, `PYTHON_CONSUMER`). Dependencies and violations from classes inside each package roll up automatically to their parent package container. |
+| **`L3_COMPONENT`** | **`C4 L3: Components & Contracts`** | *(Default)* Day-to-day architecture review, REST/Kafka contract verification, and port extraction. | Architectural components (`REST_CONTROLLER`, `SERVICE_BEAN`, `REPOSITORY`, `MESSAGE_LISTENER`, `INTERFACE`, `GHOST_SPEC`, `TS_CLIENT`, `PYTHON_CONSUMER`) with their exposed/consumed routes and violation callouts. |
+| **`L4_CODE`** | **`C4 L4: Classes & Code`** | Deep-diving into data models, DTOs, entities, and implementation classes. | Every class in the module, including `DATA_CLASS` DTOs, `ENTITY` models, `ENUM`s, and utility `CLASS`es. |
+
+---
+
+## Inspecting Package Boundaries in C4 L2
+
+When you select **`C4 L2: Containers & Packages`** in the toolbar, ArcDrift collapses individual classes into their enclosing packages and aggregates their relationships:
+
+<AnnotatedScreenshot
+  src="/screenshots/c4-l2-containers-diagram.svg"
+  alt="ArcDrift C4 L2 Containers & Packages View with rolled-up edges and violations"
+  caption="C4 L2 Containers & Packages View — Package-Level Dependency & Violation Rollup"
+  badge="C4 L2 Rollup"
+  callouts={[
+    {
+      number: 1,
+      title: 'C4 Zoom Selector',
+      description: 'Choose "C4 L2: Containers & Packages" in the toolbar to zoom out from individual classes to package containers.',
+      x: 28,
+      y: 4,
+      tone: 'info'
+    },
+    {
+      number: 2,
+      title: 'Frontend Clients Stay Visible',
+      description: 'Top-level TypeScript and Python clients (ordersClient.ts) remain visible in L2 so you can see which backend package they call.',
+      x: 55,
+      y: 25,
+      tone: 'info'
+    },
+    {
+      number: 3,
+      title: 'Package-Level Violation Rollup',
+      description: 'If any class inside com.acme.controller violates a boundary rule toward com.acme.repo, the package card itself displays the ! VIOLATION badge and lists its child components.',
+      x: 55,
+      y: 55,
+      tone: 'danger'
+    },
+    {
+      number: 4,
+      title: 'Aggregated Package Arrows',
+      description: 'Class-to-class dependencies between packages are combined into clean package-to-package arrows.',
+      x: 70,
+      y: 70,
+      tone: 'danger'
+    }
+  ]}
+/>
+
+---
+
+## Filtering, Searching & Arranging the Canvas
+
+- **Search by Name or `@Stereotype`:** Type into the **`Filter component or @Stereotype...`** box in the toolbar to filter the canvas in real time (for example, type `@RestController`, `Order`, or `com.acme.repo`).
+- **Isolate Violations & Diffs:** Click **`Filter: All Components`** (or click the **`⛔ N Violations`** status pill on the right) to switch to **`Filter: Diffs & Violations`**, hiding all clean, unchanged components so you can focus strictly on what needs attention.
+- **Drag to Pin & Grid Snap:** Toggle **`Grid Snap: On (20px)`** for crisp alignment when dragging cards. Any card you drag is pinned at its new position across live code edits until you click **`Auto-Layout`**.

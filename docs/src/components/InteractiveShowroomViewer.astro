@@ -1,0 +1,1199 @@
+---
+const showroomRepos = [
+  {
+    id: 'petclinic-react',
+    name: 'Spring PetClinic (Java + React)',
+    repoUrl: 'https://github.com/spring-petclinic/spring-petclinic-reactjs/tree/4a6c26d99f48d8bfac97352130b9fae4feab2509',
+    commit: '4a6c26d',
+    stack: 'Java 21 · Spring Boot · OpenAPI · React TypeScript (fetch)',
+    files: '118',
+    nodes: '129',
+    edges: '246',
+    contracts: '8 linked contracts',
+    statusBadge: '5 Real Upstream Bugs Caught',
+    statusTone: 'warning',
+    tokenReduction: '71.8% (16,232 vs. 57,486 raw tokens)',
+    summary:
+      'In spring-petclinic-reactjs, the backend OwnerRestController implements the OpenAPI-generated OwnersApi at /api/owners/{ownerId} (plural), while four React components call /api/owner/${params.ownerId} (singular) and ErrorPage.tsx calls the removed /api/oups route.',
+    findings: [
+      {
+        verb: 'GET',
+        route: '/api/owner/${params.ownerId} ≠ /api/owners/{ownerId}',
+        consumer: 'EditOwnerPage.tsx & OwnersPage.tsx',
+        producer: 'OwnerRestController.java',
+        detail: 'Route contract mismatch — singular /api/owner/ in React fetch() vs. plural /api/owners/{ownerId} in Spring Boot controller.'
+      },
+      {
+        verb: 'GET',
+        route: '/api/oups',
+        consumer: 'ErrorPage.tsx',
+        producer: 'MISSING (FailingApiController)',
+        detail: 'Unresolved REST contract — frontend calls /api/oups, which is commented out in the OpenAPI-first backend.'
+      }
+    ],
+    arcMmd: `flowchart TB
+    %% @arc:project name="spring-petclinic-reactjs" version="1.0"
+    %% @arc:rule id="no-controller-to-repo" name="Controllers Must Use ClinicService" from="*.rest.controller.*" to="*.repository.*" policy="FORBIDDEN"
+
+    subgraph frontend_react["React TypeScript Client (TS_CLIENT)"]
+        FindOwnersPage["FindOwnersPage.tsx<br/><i>«TS_CLIENT»</i>"]
+        EditOwnerPage["EditOwnerPage.tsx<br/><i>«TS_CLIENT · VIOLATION»</i>"]
+        OwnersPage["OwnersPage.tsx<br/><i>«TS_CLIENT · VIOLATION»</i>"]
+        EditPetPage["EditPetPage.tsx<br/><i>«TS_CLIENT»</i>"]
+        ErrorPage["ErrorPage.tsx<br/><i>«TS_CLIENT · UNRESOLVED»</i>"]
+    end
+
+    subgraph spring_rest["Spring Boot REST Controllers (REST_CONTROLLER)"]
+        OwnerRestController["OwnerRestController<br/><i>«@RestController · OwnersApi»</i>"]
+        PetRestController["PetRestController<br/><i>«@RestController · PetsApi»</i>"]
+        VetRestController["VetRestController<br/><i>«@RestController · VetsApi»</i>"]
+    end
+
+    subgraph domain_service["Domain & Persistence (SERVICE_BEAN / REPOSITORY)"]
+        ClinicServiceImpl["ClinicServiceImpl<br/><i>«@Service»</i>"]
+        OwnerRepository["OwnerRepository<br/><i>«@Repository»</i>"]
+        PetRepository["PetRepository<br/><i>«@Repository»</i>"]
+    end
+
+    FindOwnersPage -->|"GET /api/owners (OwnerDto)"| OwnerRestController
+    EditPetPage -->|"GET /api/owners/{id}/pets/{petId} (PetDto)"| PetRestController
+    EditOwnerPage -.->|"VIOLATION: GET /api/owner/{id} ≠ /api/owners/{id}"| OwnerRestController
+    OwnersPage -.->|"VIOLATION: GET /api/owner/{id} ≠ /api/owners/{id}"| OwnerRestController
+    OwnerRestController --> ClinicServiceImpl
+    PetRestController --> ClinicServiceImpl
+    VetRestController --> ClinicServiceImpl
+    ClinicServiceImpl --> OwnerRepository
+    ClinicServiceImpl --> PetRepository
+
+    style EditOwnerPage fill:#2a1215,stroke:#ef4444,stroke-width:2px,color:#fecaca
+    style OwnersPage fill:#2a1215,stroke:#ef4444,stroke-width:2px,color:#fecaca
+    style ErrorPage fill:#2a1215,stroke:#ef4444,stroke-width:2px,color:#fecaca
+    style OwnerRestController fill:#18181b,stroke:#3b82f6,stroke-width:2px,color:#f4f4f5`
+  },
+  {
+    id: 'jhipster-react',
+    name: 'JHipster Sample App (Java + React Redux)',
+    repoUrl: 'https://github.com/jhipster/jhipster-sample-app-react/tree/88535990553312f138136313c1a8df254c55cb31',
+    commit: '8853599',
+    stack: 'Java 21 · Spring Boot · React Redux Toolkit (axios)',
+    files: '215',
+    nodes: '189',
+    edges: '245',
+    contracts: '11 linked contracts',
+    statusBadge: '0 Clean-HEAD Violations · 7/7 Mutations Caught',
+    statusTone: 'success',
+    tokenReduction: '90.5% (12,550 vs. 131,418 raw tokens)',
+    summary:
+      'Links Redux Toolkit createAsyncThunk axios clients (operation.reducer.ts, bank-account.reducer.ts, password.reducer.ts, register.reducer.ts) to Spring Boot @RestController endpoints and verifies both response DTOs (OperationDTO, BankAccountDTO) and @RequestBody payloads (PasswordChangeDTO, ManagedUserVM).',
+    findings: [
+      {
+        verb: 'POST',
+        route: '/api/account/change-password',
+        consumer: 'password.reducer.ts (IPassword)',
+        producer: 'AccountResource.java (@RequestBody PasswordChangeDTO)',
+        detail: 'Verified @RequestBody fields [currentPassword, newPassword] — catches field rename mutations even with void return type.'
+      },
+      {
+        verb: 'GET / POST',
+        route: '/api/operations & /api/operations/{id}',
+        consumer: 'operation.reducer.ts (IOperation)',
+        producer: 'OperationResource.java (OperationDTO)',
+        detail: 'Verified all 6 shared DTO fields [id, date, description, amount, bankAccount, labels] across TypeScript and Java.'
+      }
+    ],
+    arcMmd: `flowchart TB
+    %% @arc:project name="jhipster-sample-app-react" version="1.0"
+
+    subgraph react_redux["React Redux Thunk Reducers (TS_CLIENT)"]
+        OperationReducer["operation.reducer.ts<br/><i>«axios · IOperation»</i>"]
+        BankAccountReducer["bank-account.reducer.ts<br/><i>«axios · IBankAccount»</i>"]
+        LabelReducer["label.reducer.ts<br/><i>«axios · ILabel»</i>"]
+        PasswordReducer["password.reducer.ts<br/><i>«axios · @RequestBody IPassword»</i>"]
+        RegisterReducer["register.reducer.ts<br/><i>«axios · @RequestBody ManagedUserVM»</i>"]
+    end
+
+    subgraph web_rest["Spring Boot REST Resources (REST_CONTROLLER)"]
+        OperationResource["OperationResource<br/><i>«@RestController · /api/operations»</i>"]
+        BankAccountResource["BankAccountResource<br/><i>«@RestController · /api/bank-accounts»</i>"]
+        LabelResource["LabelResource<br/><i>«@RestController · /api/labels»</i>"]
+        AccountResource["AccountResource<br/><i>«@RestController · /api/account»</i>"]
+    end
+
+    subgraph spring_data["Spring Data JPA Repositories (REPOSITORY)"]
+        OperationRepository["OperationRepository<br/><i>«@Repository»</i>"]
+        BankAccountRepository["BankAccountRepository<br/><i>«@Repository»</i>"]
+        UserService["UserService<br/><i>«@Service»</i>"]
+    end
+
+    OperationReducer -->|"GET / POST / PUT /api/operations (OperationDTO)"| OperationResource
+    BankAccountReducer -->|"GET / POST /api/bank-accounts (BankAccountDTO)"| BankAccountResource
+    LabelReducer -->|"GET / POST /api/labels (LabelDTO)"| LabelResource
+    PasswordReducer -->|"POST /api/account/change-password (PasswordChangeDTO)"| AccountResource
+    RegisterReducer -->|"POST /api/register (ManagedUserVM)"| AccountResource
+    OperationResource --> OperationRepository
+    BankAccountResource --> BankAccountRepository
+    AccountResource --> UserService
+
+    style OperationResource fill:#18181b,stroke:#3b82f6,stroke-width:2px,color:#f4f4f5
+    style AccountResource fill:#062e22,stroke:#10b981,stroke-width:2px,color:#d1fae5`
+  },
+  {
+    id: 'petclinic-angular',
+    name: 'Spring PetClinic (Angular)',
+    repoUrl: 'https://github.com/spring-petclinic/spring-petclinic-angular/tree/e992ba8bf89a264fa4215213b855044ea1d43bb2',
+    commit: 'e992ba8',
+    stack: 'TypeScript · Angular HttpClient · Observable<T>',
+    files: '97',
+    nodes: '64',
+    edges: '150',
+    contracts: '7 federated contracts',
+    statusBadge: '9 Federated Schema Deltas Caught',
+    statusTone: 'warning',
+    tokenReduction: '67.4% (2-hop L3 slice)',
+    summary:
+      'Standalone Angular frontend linked via --upstream-contracts against spring-petclinic-rest. ArcDrift extracts HttpClient Observable<T> calls and flags real schema deltas such as Pet.owner vs. PetDto.ownerId.',
+    findings: [
+      {
+        verb: 'GET / PUT',
+        route: '/api/pets/{petId}',
+        consumer: 'pet.service.ts (Pet)',
+        producer: 'PetRestController (PetDto)',
+        detail: 'Federated DTO mismatch — Angular Pet expects nested owner object while REST producer returns PetDto.ownerId.'
+      }
+    ],
+    arcMmd: `flowchart TB
+    %% @arc:project name="spring-petclinic-angular" version="1.0"
+
+    subgraph angular_services["Angular HttpClient Services (TS_CLIENT)"]
+        OwnerService["owner.service.ts<br/><i>«HttpClient · Owner»</i>"]
+        PetService["pet.service.ts<br/><i>«HttpClient · Pet»</i>"]
+        VisitService["visit.service.ts<br/><i>«HttpClient · Visit»</i>"]
+    end
+
+    subgraph upstream_rest["Federated Spring Boot Backend (--upstream-contracts)"]
+        PetRest["PetRestController<br/><i>«ExportedContractProducer · PetDto»</i>"]
+        OwnerRest["OwnerRestController<br/><i>«ExportedContractProducer · OwnerDto»</i>"]
+    end
+
+    OwnerService -->|"GET /api/owners (OwnerDto)"| OwnerRest
+    PetService -.->|"DRIFT: Pet.owner vs PetDto.ownerId"| PetRest
+    VisitService -->|"POST /api/visits"| PetRest
+
+    style PetService fill:#2a1215,stroke:#ef4444,stroke-width:2px,color:#fecaca
+    style PetRest fill:#18181b,stroke:#3b82f6,stroke-width:2px,color:#f4f4f5`
+  },
+  {
+    id: 'jhipster-angular',
+    name: 'JHipster Sample App (Java + Angular)',
+    repoUrl: 'https://github.com/jhipster/jhipster-sample-app/tree/6b000b5d23a36c45e01472471b84a44fa2464044',
+    commit: '6b000b5',
+    stack: 'Java 21 · Spring Boot · Angular TypeScript (HttpClient)',
+    files: '349',
+    nodes: '242',
+    edges: '299',
+    contracts: '13 linked contracts',
+    statusBadge: '2 Clean-HEAD Findings',
+    statusTone: 'warning',
+    tokenReduction: '92.1% (2-hop L3 slice)',
+    summary:
+      'Java Spring Boot + Angular monorepo with 38 producer endpoints and 37 Angular HttpClient consumer calls. ArcDrift links 13 cross-language contracts and flags the unused GET /api/users/{id} call and User.authorities type delta.',
+    findings: [
+      {
+        verb: 'GET',
+        route: '/api/users/{id}',
+        consumer: 'user.service.ts',
+        producer: 'UserResource.java',
+        detail: 'Unresolved route / type delta — user.service.ts references /api/users/{id} and User.authorities (string[] vs. Set<Authority>).'
+      }
+    ],
+    arcMmd: `flowchart TB
+    %% @arc:project name="jhipster-sample-app" version="1.0"
+
+    subgraph angular_ui["Angular Services (TS_CLIENT)"]
+        UserService["user.service.ts<br/><i>«HttpClient · IUser»</i>"]
+        AccountService["account.service.ts<br/><i>«HttpClient · Account»</i>"]
+        OperationService["operation.service.ts<br/><i>«HttpClient · IOperation»</i>"]
+    end
+
+    subgraph spring_api["Spring Boot REST Resources (REST_CONTROLLER)"]
+        UserResource["UserResource<br/><i>«@RestController · /api/admin/users»</i>"]
+        AccountResource["AccountResource<br/><i>«@RestController · /api/account»</i>"]
+        OperationResource["OperationResource<br/><i>«@RestController · /api/operations»</i>"]
+    end
+
+    UserService -.->|"DRIFT: User.authorities & /api/users/{id}"| UserResource
+    AccountService -->|"GET /api/account"| AccountResource
+    OperationService -->|"GET /api/operations"| OperationResource
+
+    style UserService fill:#2a1215,stroke:#ef4444,stroke-width:2px,color:#fecaca
+    style AccountResource fill:#18181b,stroke:#3b82f6,stroke-width:2px,color:#f4f4f5`
+  },
+  {
+    id: 'petclinic-kotlin',
+    name: 'Spring PetClinic (Kotlin)',
+    repoUrl: 'https://github.com/spring-petclinic/spring-petclinic-kotlin/tree/d63e00783b70492ce8643eda0f995d76d06f8364',
+    commit: 'd63e007',
+    stack: 'Kotlin · Spring Boot @Controller · JPA Repositories',
+    files: '24',
+    nodes: '30',
+    edges: '37',
+    contracts: '19 REST producers',
+    statusBadge: '0 Violations · 5/5 Deterministic Refactorings',
+    statusTone: 'success',
+    tokenReduction: '76.4% (2-hop L3 slice)',
+    summary:
+      'Pure Kotlin Spring Boot reference app used to verify all 5 deterministic AST refactorings (EXTRACT_INTERFACE, RENAME_SYMBOL, MOVE_CLASS_OR_PACKAGE, CREATE_NODE, ADD_DEPENDENCY) via KtPsiFactory with 0 PSI syntax errors across 16 touched .kt files.',
+    findings: [
+      {
+        verb: 'GET / POST',
+        route: '/owners/{ownerId} & /vets.html',
+        consumer: 'Server-rendered Thymeleaf / MVC',
+        producer: 'OwnerController.kt & VetController.kt',
+        detail: 'Clean layered Spring MVC architecture; 0 cycle edges and 0 PSI syntax errors after deterministic port extraction.'
+      }
+    ],
+    arcMmd: `flowchart TB
+    %% @arc:project name="spring-petclinic-kotlin" version="1.0"
+    %% @arc:rule id="no-controller-to-repo" name="Controllers Must Use Services" from="*.owner.*Controller" to="*.owner.*Repository" policy="FORBIDDEN"
+
+    subgraph mvc["Spring MVC Controllers (REST_CONTROLLER)"]
+        OwnerController["OwnerController.kt<br/><i>«@Controller»</i>"]
+        PetController["PetController.kt<br/><i>«@Controller»</i>"]
+        VetController["VetController.kt<br/><i>«@Controller»</i>"]
+    end
+
+    subgraph persistence["Repositories (REPOSITORY)"]
+        OwnerRepository["OwnerRepository.kt<br/><i>«@Repository»</i>"]
+        PetRepository["PetRepository.kt<br/><i>«@Repository»</i>"]
+        VetRepository["VetRepository.kt<br/><i>«@Repository»</i>"]
+    end
+
+    OwnerController --> OwnerRepository
+    PetController --> PetRepository
+    VetController --> VetRepository
+
+    style OwnerController fill:#18181b,stroke:#3b82f6,stroke-width:2px,color:#f4f4f5
+    style OwnerRepository fill:#062e22,stroke:#10b981,stroke-width:2px,color:#d1fae5`
+  },
+  {
+    id: 'fastapi-template',
+    name: 'Full-Stack FastAPI Template (Python + React)',
+    repoUrl: 'https://github.com/fastapi/full-stack-fastapi-template/tree/aabb90126964a164e02aff39e7c385bb0598236d',
+    commit: 'aabb901',
+    stack: 'Python · FastAPI · SQLModel · React (@hey-api/openapi-ts SDK)',
+    files: '125',
+    nodes: '117',
+    edges: '104',
+    contracts: '15 linked contracts',
+    statusBadge: '0 Violations · 2-Hop SDK Call Tracing',
+    statusTone: 'success',
+    tokenReduction: '94.8% (4,393 vs. 83,677 raw tokens)',
+    summary:
+      'Traces React UI components (AddItem.tsx, EditItem.tsx, AddUser.tsx) through generated @hey-api/openapi-ts SDK methods (ItemsService.createItem, UsersService.createUser) to FastAPI APIRouter endpoints and SQLModel request/response schemas (ItemCreate, ItemPublic, UserPublic).',
+    findings: [
+      {
+        verb: 'POST',
+        route: '/api/v1/items/',
+        consumer: 'AddItem.tsx -> ItemsService.createItem',
+        producer: 'items.py (request: ItemCreate, response: ItemPublic)',
+        detail: '2-hop SDK trace unwraps Options<itemsCreateItemData> body (ItemCreate) and 200 status map (ItemPublic).'
+      },
+      {
+        verb: 'POST / PATCH',
+        route: '/api/v1/users/ & /api/v1/users/{user_id}',
+        consumer: 'AddUser.tsx & EditUser.tsx -> UsersService',
+        producer: 'users.py (UserCreate / UserUpdate -> UserPublic)',
+        detail: 'Resolves SQLModel superclass field inheritance (UserBase -> UserPublic) and global API_V1_STR (/api/v1) prefix.'
+      }
+    ],
+    arcMmd: `flowchart TB
+    %% @arc:project name="full-stack-fastapi-template" version="1.0"
+
+    subgraph react_ui["React UI Components (TS_CLIENT)"]
+        AddItem["AddItem.tsx<br/><i>«ItemsService.createItem»</i>"]
+        EditItem["EditItem.tsx<br/><i>«ItemsService.updateItem»</i>"]
+        DeleteItem["DeleteItem.tsx<br/><i>«ItemsService.deleteItem»</i>"]
+        AddUser["AddUser.tsx<br/><i>«UsersService.createUser»</i>"]
+        EditUser["EditUser.tsx<br/><i>«UsersService.updateUser»</i>"]
+    end
+
+    subgraph openapi_sdk["Generated @hey-api/openapi-ts SDK"]
+        SdkGen["sdk.gen.ts & types.gen.ts<br/><i>«ItemsService · UsersService»</i>"]
+    end
+
+    subgraph fastapi_routes["FastAPI Routers & SQLModel Schemas (PYTHON)"]
+        ItemsRouter["backend/app/api/routes/items.py<br/><i>«APIRouter prefix='/items'»</i>"]
+        UsersRouter["backend/app/api/routes/users.py<br/><i>«APIRouter prefix='/users'»</i>"]
+        SqlModels["backend/app/models.py<br/><i>«ItemCreate · ItemPublic · UserPublic»</i>"]
+    end
+
+    AddItem -->|"POST /api/v1/items/ (ItemCreate -> ItemPublic)"| ItemsRouter
+    EditItem -->|"PUT /api/v1/items/{id} (ItemUpdate -> ItemPublic)"| ItemsRouter
+    DeleteItem -->|"DELETE /api/v1/items/{id} (Message)"| ItemsRouter
+    AddUser -->|"POST /api/v1/users/ (UserCreate -> UserPublic)"| UsersRouter
+    EditUser -->|"PATCH /api/v1/users/{user_id} (UserPublic)"| UsersRouter
+    AddItem -.-> SdkGen
+    ItemsRouter --> SqlModels
+    UsersRouter --> SqlModels
+
+    style ItemsRouter fill:#064e3b,stroke:#34d399,stroke-width:2px,color:#ecfdf5
+    style UsersRouter fill:#064e3b,stroke:#34d399,stroke-width:2px,color:#ecfdf5`
+  },
+  {
+    id: 'kafbat-kafka-ui',
+    name: 'Kafbat Kafka UI (Spring WebFlux + TypeSpec + React)',
+    repoUrl: 'https://github.com/kafbat/kafka-ui/tree/73e5d409e9017bc30eae9378b1eae2cfc5ee9e9f',
+    commit: '73e5d40',
+    stack: 'Java 21 · Spring WebFlux · TypeSpec (*.tsp) · React TypeScript',
+    files: '1,050',
+    nodes: '1,029',
+    edges: '1,981',
+    contracts: '16 linked contracts',
+    statusBadge: '0 Violations Across 1,050 Files',
+    statusTone: 'success',
+    tokenReduction: '96.8% (31,878 vs. 989,986 raw tokens)',
+    summary:
+      'Parses TypeSpec (*.tsp) @route, @operationId, and model definitions in contract-typespec/api/*.tsp to bridge React API hooks (acl.ts, clusters.ts, topics.ts) to Spring WebFlux controllers implementing generated *Api interfaces.',
+    findings: [
+      {
+        verb: 'GET / POST',
+        route: '/api/clusters/{clusterName}/acls',
+        consumer: 'frontend/src/lib/hooks/api/acl.ts',
+        producer: 'AccessControlController.java (implements AclsApi)',
+        detail: 'Bridges React Query hooks through TypeSpec @operationId("listAcls" / "createAcl") to WebFlux controller.'
+      },
+      {
+        verb: 'POST / PUT',
+        route: '/api/clusters/{clusterName}/connects/{connectName}/connectors',
+        consumer: 'kafkaConnectClient',
+        producer: 'KafkaConnectController.java (Connector model)',
+        detail: 'Extracts TypeSpec spread inheritance (...NewConnector -> Connector) with fields [name, config, tasks, type, status, connect, topics].'
+      }
+    ],
+    arcMmd: `flowchart TB
+    %% @arc:project name="kafka-ui" version="1.0"
+
+    subgraph react_hooks["React Query API Hooks (TS_CLIENT)"]
+        AclHooks["hooks/api/acl.ts<br/><i>«aclApiClient»</i>"]
+        ClusterHooks["hooks/api/clusters.ts<br/><i>«clustersApiClient»</i>"]
+        TopicsListPage["Topics/List/ListPage.tsx<br/><i>«GET /topics/csv»</i>"]
+    end
+
+    subgraph typespec_contract["TypeSpec Contract Layer (contract-typespec/*.tsp)"]
+        TspSpecs["acls.tsp · clusters.tsp · kafka-connect.tsp<br/><i>«@route · @operationId · model Connector»</i>"]
+    end
+
+    subgraph webflux_backend["Spring WebFlux Controllers (REST_CONTROLLER)"]
+        AccessControlController["AccessControlController<br/><i>«implements AclsApi»</i>"]
+        ClustersController["ClustersController<br/><i>«implements ClustersApi»</i>"]
+        MessagesController["MessagesController<br/><i>«implements MessagesApi»</i>"]
+    end
+
+    AclHooks -->|"GET / POST / DELETE /api/clusters/{clusterName}/acls"| AccessControlController
+    ClusterHooks -->|"GET / POST /api/clusters"| ClustersController
+    TopicsListPage -->|"GET /api/clusters/{clusterName}/topics/csv"| MessagesController
+    AclHooks -.-> TspSpecs
+    TspSpecs -.-> AccessControlController
+
+    style AccessControlController fill:#18181b,stroke:#3b82f6,stroke-width:2px,color:#f4f4f5
+    style ClustersController fill:#18181b,stroke:#3b82f6,stroke-width:2px,color:#f4f4f5`
+  },
+  {
+    id: 'tolgee-platform',
+    name: 'Tolgee Platform (Kotlin + React + Multi-Repo Federation)',
+    repoUrl: 'https://github.com/tolgee/tolgee-platform/tree/5fdc27a8102cbcfb4474b5e680280b28e72bff1a',
+    commit: '5fdc27a',
+    stack: 'Kotlin · Spring Boot · React TypeScript (useApiQuery / useApiMutation)',
+    files: '4,022',
+    nodes: '4,348',
+    edges: '13,084',
+    contracts: '294 linked contracts (with tolgee-cloud federation)',
+    statusBadge: '0 Violations with Multi-Repo Federation',
+    statusTone: 'success',
+    tokenReduction: '97.0% (75,277 vs. 2,547,073 raw tokens)',
+    summary:
+      'Scans 4,022 Kotlin and TypeScript files in ~21 seconds, linking 285 internal REST contracts and resolving all 13 cross-repository Tolgee Cloud billing endpoints via --upstream-contracts while pruning 2-hop context slices by 97.0% vs. raw source.',
+    findings: [
+      {
+        verb: 'GET / POST',
+        route: '/v2/api-keys & /v2/projects/{projectId}/all-keys',
+        consumer: 'webapp/src/views/userSettings/apiKeys/*',
+        producer: 'ApiKeyController.kt & AllKeysController.kt',
+        detail: 'Extracts useApiQuery({ url, method }) and Kotlin HATEOAS PagedModel<T> / Superclass DTO inheritance across 670 producer endpoints.'
+      },
+      {
+        verb: 'GET / PUT / POST',
+        route: '/v2/organizations/{organizationId}/billing/*',
+        consumer: 'PastDueBanner.tsx & useWordsAutoUpgrade.ts',
+        producer: 'upstream:tolgee-cloud:BillingController (--upstream-contracts)',
+        detail: 'Demonstrates multi-repository contract federation between open-source tolgee-platform and external tolgee-cloud billing controllers.'
+      }
+    ],
+    arcMmd: `flowchart TB
+    %% @arc:project name="tolgee-platform" version="1.0"
+
+    subgraph tolgee_webapp["Tolgee React Webapp (418 Consumer Endpoints)"]
+        ApiKeysView["ApiKeysView.tsx<br/><i>«useApiQuery · /v2/api-keys»</i>"]
+        TranslationsView["TranslationsView.tsx<br/><i>«useApiQuery · /v2/projects/{id}/translations»</i>"]
+        PastDueBanner["PastDueBanner.tsx<br/><i>«useApiQuery · /billing/customer-portal»</i>"]
+        AutoUpgradeHook["useWordsAutoUpgrade.ts<br/><i>«useApiMutation · /billing/auto-upgrade»</i>"]
+    end
+
+    subgraph tolgee_backend["Tolgee Kotlin Backend (670 Producer Endpoints)"]
+        ApiKeyController["ApiKeyController.kt<br/><i>«@RestController · RevealedApiKeyModel»</i>"]
+        TranslationsController["TranslationsController.kt<br/><i>«@RestController»</i>"]
+    end
+
+    subgraph tolgee_cloud_federated["Federated Repo: tolgee-cloud (--upstream-contracts)"]
+        CloudBillingController["BillingController (tolgee-cloud)<br/><i>«ExportedContractProducer · contracts.arc.json»</i>"]
+    end
+
+    ApiKeysView -->|"GET / POST /v2/api-keys (RevealedApiKeyModel)"| ApiKeyController
+    TranslationsView -->|"GET /v2/projects/{projectId}/translations"| TranslationsController
+    PastDueBanner -->|"FEDERATED: GET /v2/organizations/{id}/billing/customer-portal"| CloudBillingController
+    AutoUpgradeHook -->|"FEDERATED: PUT /v2/organizations/{id}/billing/auto-upgrade"| CloudBillingController
+
+    style ApiKeyController fill:#18181b,stroke:#3b82f6,stroke-width:2px,color:#f4f4f5
+    style CloudBillingController fill:#062e22,stroke:#10b981,stroke-width:2px,color:#d1fae5`
+  },
+  {
+    id: 'netflix-dispatch',
+    name: 'Netflix Dispatch (FastAPI + Vue/TS)',
+    repoUrl: 'https://github.com/Netflix/dispatch/tree/dd2837e82a0bf5565b1b4b4b91ea30b7262d4061',
+    commit: 'dd2837e',
+    stack: 'Python FastAPI (@router / Pydantic) · TypeScript / Vue',
+    files: '664',
+    nodes: '559',
+    edges: '1,726',
+    contracts: '43 linked contracts',
+    statusBadge: '43 Linked · 8 External Webhooks',
+    statusTone: 'success',
+    tokenReduction: '93.4% (2-hop L3 slice)',
+    summary:
+      'Large-scale incident-management platform with 277 FastAPI producer endpoints and 43 linked TypeScript/Vue client contracts. Only 8 external plugin webhook calls (Opsgenie, Zoom, GitHub) remain unlinked locally.',
+    findings: [
+      {
+        verb: 'GET / POST',
+        route: '/api/v1/incidents & /api/v1/cases',
+        consumer: 'incident/api.ts & case/api.ts',
+        producer: 'incident/views.py & case/views.py',
+        detail: 'Linked 43 internal FastAPI <-> TypeScript contracts across 664 source files with Pydantic schema resolution.'
+      }
+    ],
+    arcMmd: `flowchart TB
+    %% @arc:project name="dispatch" version="1.0"
+
+    subgraph vue_ts["Vue / TypeScript API Clients (TS_CLIENT)"]
+        IncidentApi["incident/api.ts<br/><i>«axios · IncidentRead»</i>"]
+        CaseApi["case/api.ts<br/><i>«axios · CaseRead»</i>"]
+        PluginWebhook["plugin/webhooks.ts<br/><i>«External Opsgenie/Zoom»</i>"]
+    end
+
+    subgraph fastapi_routers["FastAPI Routers (PYTHON_CONSUMER / PRODUCER)"]
+        IncidentViews["incident/views.py<br/><i>«@router · /api/v1/incidents»</i>"]
+        CaseViews["case/views.py<br/><i>«@router · /api/v1/cases»</i>"]
+    end
+
+    IncidentApi -->|"GET /api/v1/incidents"| IncidentViews
+    CaseApi -->|"POST /api/v1/cases"| CaseViews
+    PluginWebhook -.->|"External webhook"| CaseViews
+
+    style IncidentViews fill:#18181b,stroke:#3b82f6,stroke-width:2px,color:#f4f4f5
+    style IncidentApi fill:#062e22,stroke:#10b981,stroke-width:2px,color:#d1fae5`
+  },
+  {
+    id: 'gotson-komga',
+    name: 'Komga (Kotlin Spring Boot + Vue)',
+    repoUrl: 'https://github.com/gotson/komga/tree/db2ad643c64d9199f7dd01cd3cca3ff0e7a17445',
+    commit: 'db2ad64',
+    stack: 'Kotlin Spring Boot · Vue 2 + Next UI (@hey-api/openapi-ts)',
+    files: '973',
+    nodes: '927',
+    edges: '2,084',
+    contracts: '42 linked contracts',
+    statusBadge: '42 Linked Across Dual Frontends',
+    statusTone: 'success',
+    tokenReduction: '93.0% (2-hop L3 slice)',
+    summary:
+      'Production Kotlin Spring Boot media server serving both a legacy Vue 2 UI and a modern @hey-api/openapi-ts frontend. ArcDrift parses 248 Kotlin endpoints and 240 consumer calls across 973 files.',
+    findings: [
+      {
+        verb: 'GET / PATCH',
+        route: '/api/v1/series & /api/v1/books',
+        consumer: 'komga-webui & @hey-api SDK',
+        producer: 'SeriesController.kt & BookController.kt',
+        detail: 'Linked 42 cross-language contracts across Kotlin Spring Boot and dual Vue/TypeScript frontends.'
+      }
+    ],
+    arcMmd: `flowchart TB
+    %% @arc:project name="komga" version="1.0"
+
+    subgraph frontends["Dual TypeScript Frontends (TS_CLIENT)"]
+        WebUiSeries["komga-series.service.ts<br/><i>«Vue 2 · PageSeriesDto»</i>"]
+        OpenApiSdk["sdk.gen.ts<br/><i>«@hey-api/openapi-ts»</i>"]
+    end
+
+    subgraph kotlin_api["Kotlin Spring Boot Controllers (REST_CONTROLLER)"]
+        SeriesController["SeriesController.kt<br/><i>«@RestController · /api/v1/series»</i>"]
+        BookController["BookController.kt<br/><i>«@RestController · /api/v1/books»</i>"]
+    end
+
+    WebUiSeries -->|"GET /api/v1/series (SeriesDto)"| SeriesController
+    OpenApiSdk -->|"GET /api/v1/books (BookDto)"| BookController
+
+    style SeriesController fill:#18181b,stroke:#3b82f6,stroke-width:2px,color:#f4f4f5
+    style OpenApiSdk fill:#062e22,stroke:#10b981,stroke-width:2px,color:#d1fae5`
+  }
+];
+---
+
+<div class="arc-showroom not-content" data-showroom>
+  <!-- Structured 2-Column Repository Selector Grid -->
+  <div class="arc-showroom-nav" role="tablist" aria-label="Open-source benchmark repositories">
+    {showroomRepos.map((repo, idx) => (
+      <button
+        type="button"
+        role="tab"
+        id={`showroom-tab-${repo.id}`}
+        aria-controls={`showroom-panel-${repo.id}`}
+        aria-selected={idx === 0 ? 'true' : 'false'}
+        tabindex={idx === 0 ? 0 : -1}
+        class={`arc-showroom-pill ${idx === 0 ? 'is-active' : ''}`}
+        data-showroom-tab={idx}
+      >
+        <span class="arc-showroom-pill-title">{repo.name}</span>
+        <span class="arc-showroom-pill-meta">{repo.files} files · {repo.contracts}</span>
+        <span class="arc-showroom-pill-stack">{repo.stack}</span>
+      </button>
+    ))}
+  </div>
+
+  {showroomRepos.map((repo, idx) => (
+    <div
+      id={`showroom-panel-${repo.id}`}
+      role="tabpanel"
+      aria-labelledby={`showroom-tab-${repo.id}`}
+      class={`arc-showroom-panel ${idx === 0 ? 'is-active' : ''}`}
+      data-showroom-panel={idx}
+    >
+      <!-- Telemetry Strip -->
+      <div class="arc-showroom-metrics">
+        <div class="arc-showroom-metric">
+          <span class="arc-showroom-metric-k">Repository & Tested Commit</span>
+          <a href={repo.repoUrl} target="_blank" rel="noopener noreferrer" class="arc-showroom-metric-v arc-showroom-link">
+            {repo.stack} @ <code>{repo.commit}</code> ↗
+          </a>
+        </div>
+        <div class="arc-showroom-metric">
+          <span class="arc-showroom-metric-k">Graph Scale</span>
+          <span class="arc-showroom-metric-v">{repo.files} files · {repo.nodes} nodes · {repo.edges} edges</span>
+        </div>
+        <div class="arc-showroom-metric">
+          <span class="arc-showroom-metric-k">Cross-Language Contracts</span>
+          <span class="arc-showroom-metric-v">{repo.contracts} · {repo.statusBadge}</span>
+        </div>
+        <div class="arc-showroom-metric">
+          <span class="arc-showroom-metric-k">2-Hop MCP Slice Reduction</span>
+          <span class="arc-showroom-metric-v">{repo.tokenReduction}</span>
+        </div>
+      </div>
+
+      <p class="arc-showroom-summary">{repo.summary}</p>
+
+      <!-- Interactive Mermaid Canvas & Raw .arc.mmd Switcher -->
+      <div class="arc-showroom-canvas-shell" data-canvas-shell>
+        <div class="arc-showroom-toolbar">
+          <div class="arc-showroom-toolbar-left">
+            <span class="arc-showroom-file-chip">architecture.arc.mmd</span>
+            <button type="button" class="arc-showroom-btn is-active" data-view-mode="diagram">
+              Diagram
+            </button>
+            <button type="button" class="arc-showroom-btn" data-view-mode="code">
+              .arc.mmd Source
+            </button>
+          </div>
+          <div class="arc-showroom-toolbar-right">
+            <button type="button" class="arc-showroom-btn" data-zoom-out title="Zoom Out">−</button>
+            <span class="arc-showroom-zoom-label" data-zoom-label>100%</span>
+            <button type="button" class="arc-showroom-btn" data-zoom-in title="Zoom In">+</button>
+            <button type="button" class="arc-showroom-btn" data-zoom-reset>Reset</button>
+            <button type="button" class="arc-showroom-btn arc-showroom-btn--primary" data-copy-mmd>
+              Copy .arc.mmd
+            </button>
+          </div>
+        </div>
+
+        <div
+          class="arc-showroom-diagram-viewport"
+          data-diagram-viewport
+          tabindex="0"
+          role="region"
+          aria-label={`Interactive C4 architecture diagram for ${repo.name}`}
+        >
+          <div class="arc-showroom-diagram-inner" data-diagram-inner>
+            <pre class="arc-mermaid-source" data-mermaid-source>{repo.arcMmd}</pre>
+            <div class="arc-mermaid-target" data-mermaid-target>Rendering interactive C4 graph...</div>
+          </div>
+        </div>
+
+        <pre class="arc-showroom-code-view" data-code-view hidden><code>{repo.arcMmd}</code></pre>
+      </div>
+
+      <!-- Verified Contract Findings & 1-Click False-Positive Feedback -->
+      <div class="arc-showroom-findings">
+        <div class="arc-showroom-findings-header">
+          <span>Verified Cross-Language Contract Findings</span>
+          <a
+            href={`https://github.com/arcdrift/arcdrift/issues/new?labels=feedback,showroom&title=${encodeURIComponent(`[Showroom Feedback] ${repo.name}`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="arc-showroom-feedback-btn"
+          >
+            Report False Positive / Suggest Repo ↗
+          </a>
+        </div>
+        <div class="arc-showroom-findings-grid">
+          {repo.findings.map((f) => (
+            <div class="arc-showroom-finding-card">
+              <div class="arc-showroom-finding-top">
+                <span class="arc-showroom-verb">{f.verb}</span>
+                <code class="arc-showroom-route">{f.route}</code>
+              </div>
+              <div class="arc-showroom-finding-endpoints">
+                <span><strong>Consumer:</strong> {f.consumer}</span>
+                <span><strong>Producer:</strong> {f.producer}</span>
+              </div>
+              <p class="arc-showroom-finding-detail">{f.detail}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
+
+<script>
+  import mermaid from 'mermaid';
+
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    securityLevel: 'loose',
+    themeVariables: {
+      darkMode: true,
+      background: '#09090b',
+      primaryColor: '#18181b',
+      primaryTextColor: '#f4f4f5',
+      primaryBorderColor: '#3f3f46',
+      lineColor: '#71717a',
+      secondaryColor: '#121215',
+      tertiaryColor: '#141418',
+      clusterBkg: '#121215',
+      clusterBorder: '#27272a',
+      edgeLabelBackground: '#18181b',
+      fontFamily: 'Inter, system-ui, sans-serif'
+    },
+    flowchart: {
+      htmlLabels: true,
+      curve: 'basis',
+      padding: 16
+    }
+  });
+
+  async function renderVisibleDiagrams(root: Element) {
+    const activePanel = root.querySelector('.arc-showroom-panel.is-active');
+    if (!activePanel) return;
+    const target = activePanel.querySelector('[data-mermaid-target]');
+    const source = activePanel.querySelector('[data-mermaid-source]');
+    if (!target || !source || target.getAttribute('data-rendered') === 'true') return;
+
+    const rawMmd = source.textContent || '';
+    try {
+      const id = 'arc-mmd-' + Math.random().toString(36).slice(2, 9);
+      const { svg } = await mermaid.render(id, rawMmd);
+      target.innerHTML = svg;
+      const svgEl = target.querySelector('svg');
+      if (svgEl) {
+        svgEl.style.maxWidth = '100%';
+        svgEl.style.height = 'auto';
+      }
+      target.setAttribute('data-rendered', 'true');
+    } catch (err) {
+      target.textContent = 'Failed to render Mermaid diagram; inspect .arc.mmd Source tab.';
+    }
+  }
+
+  function initShowrooms() {
+    document.querySelectorAll('[data-showroom]').forEach((root) => {
+      if ((root as HTMLElement).dataset.showroomBound === 'true') return;
+      (root as HTMLElement).dataset.showroomBound = 'true';
+
+      const tabs = Array.from(root.querySelectorAll('[data-showroom-tab]')) as HTMLButtonElement[];
+      const panels = root.querySelectorAll('[data-showroom-panel]');
+
+      function activateTab(idx: number, moveFocus = false) {
+        tabs.forEach((t, i) => {
+          const active = i === idx;
+          t.classList.toggle('is-active', active);
+          t.setAttribute('aria-selected', active ? 'true' : 'false');
+          t.setAttribute('tabindex', active ? '0' : '-1');
+        });
+        panels.forEach((p, i) => {
+          p.classList.toggle('is-active', i === idx);
+        });
+        if (moveFocus && tabs[idx]) tabs[idx].focus();
+        renderVisibleDiagrams(root);
+      }
+
+      tabs.forEach((tab, idx) => {
+        tab.addEventListener('click', () => activateTab(idx));
+        tab.addEventListener('keydown', (e: KeyboardEvent) => {
+          if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            activateTab((idx + 1) % tabs.length, true);
+          } else if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            activateTab((idx - 1 + tabs.length) % tabs.length, true);
+          } else if (e.key === 'Home') {
+            e.preventDefault();
+            activateTab(0, true);
+          } else if (e.key === 'End') {
+            e.preventDefault();
+            activateTab(tabs.length - 1, true);
+          }
+        });
+      });
+
+      root.querySelectorAll('[data-canvas-shell]').forEach((shell) => {
+        let scale = 1;
+        const inner = shell.querySelector('[data-diagram-inner]') as HTMLElement | null;
+        const zoomLabel = shell.querySelector('[data-zoom-label]');
+        const diagramViewport = shell.querySelector('[data-diagram-viewport]') as HTMLElement | null;
+        const codeView = shell.querySelector('[data-code-view]');
+        const modeBtns = shell.querySelectorAll('[data-view-mode]');
+        const sourceEl = shell.querySelector('[data-mermaid-source]');
+        const copyBtn = shell.querySelector('[data-copy-mmd]');
+
+        function applyZoom() {
+          if (inner) inner.style.transform = `scale(${scale})`;
+          if (zoomLabel) zoomLabel.textContent = `${Math.round(scale * 100)}%`;
+        }
+
+        shell.querySelector('[data-zoom-in]')?.addEventListener('click', () => {
+          scale = Math.min(2.0, +(scale + 0.15).toFixed(2));
+          applyZoom();
+        });
+        shell.querySelector('[data-zoom-out]')?.addEventListener('click', () => {
+          scale = Math.max(0.55, +(scale - 0.15).toFixed(2));
+          applyZoom();
+        });
+        shell.querySelector('[data-zoom-reset]')?.addEventListener('click', () => {
+          scale = 1;
+          applyZoom();
+        });
+
+        // Click-and-drag panning inside the diagram viewport
+        if (diagramViewport) {
+          let isPanning = false;
+          let startX = 0;
+          let startY = 0;
+          let scrollLeft = 0;
+          let scrollTop = 0;
+
+          diagramViewport.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            isPanning = true;
+            diagramViewport.classList.add('is-panning');
+            startX = e.pageX - diagramViewport.offsetLeft;
+            startY = e.pageY - diagramViewport.offsetTop;
+            scrollLeft = diagramViewport.scrollLeft;
+            scrollTop = diagramViewport.scrollTop;
+          });
+          window.addEventListener('mouseup', () => {
+            if (!isPanning) return;
+            isPanning = false;
+            diagramViewport.classList.remove('is-panning');
+          });
+          diagramViewport.addEventListener('mousemove', (e) => {
+            if (!isPanning) return;
+            e.preventDefault();
+            const x = e.pageX - diagramViewport.offsetLeft;
+            const y = e.pageY - diagramViewport.offsetTop;
+            diagramViewport.scrollLeft = scrollLeft - (x - startX);
+            diagramViewport.scrollTop = scrollTop - (y - startY);
+          });
+        }
+
+        modeBtns.forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const mode = btn.getAttribute('data-view-mode');
+            modeBtns.forEach((b) => b.classList.toggle('is-active', b === btn));
+            if (mode === 'code') {
+              diagramViewport?.setAttribute('hidden', '');
+              codeView?.removeAttribute('hidden');
+            } else {
+              codeView?.setAttribute('hidden', '');
+              diagramViewport?.removeAttribute('hidden');
+              renderVisibleDiagrams(root);
+            }
+          });
+        });
+
+        copyBtn?.addEventListener('click', async () => {
+          const text = sourceEl?.textContent || '';
+          await navigator.clipboard.writeText(text);
+          const orig = copyBtn.textContent;
+          copyBtn.textContent = 'Copied!';
+          setTimeout(() => {
+            copyBtn.textContent = orig;
+          }, 1500);
+        });
+      });
+
+      renderVisibleDiagrams(root);
+    });
+  }
+
+  initShowrooms();
+  document.addEventListener('astro:page-load', initShowrooms);
+</script>
+
+<style>
+  .arc-showroom {
+    margin: 1.5rem 0 2.5rem;
+    border-radius: 8px;
+    background: var(--arc-bg-panel);
+    border: 1px solid var(--arc-border-subtle);
+    padding: 1.15rem;
+    box-shadow: var(--arc-shadow);
+  }
+
+  .arc-showroom-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+    padding-bottom: 0.95rem;
+    border-bottom: 1px solid var(--arc-border-subtle);
+  }
+
+  .arc-showroom-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.22rem;
+    text-align: left;
+    padding: 0.55rem 0.75rem;
+    border-radius: 7px;
+    border: 1px solid var(--arc-border-strong);
+    background: var(--arc-bg-elevated);
+    color: var(--arc-text-secondary);
+    font-family: var(--sl-font);
+    cursor: pointer;
+    min-width: 0;
+    transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  }
+
+  .arc-showroom-pill-title {
+    display: block;
+    width: 100%;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: inherit;
+  }
+
+  .arc-showroom-pill-meta {
+    display: block;
+    width: 100%;
+    font-family: var(--sl-font-mono);
+    font-size: 0.69rem;
+    line-height: 1.35;
+    color: var(--arc-text-muted);
+  }
+
+  .arc-showroom-pill-stack {
+    display: block;
+    width: 100%;
+    font-size: 0.72rem;
+    line-height: 1.38;
+    color: var(--arc-text-muted);
+  }
+
+  .arc-showroom-pill:hover {
+    background: var(--arc-bg-hover);
+    border-color: var(--arc-border-hover);
+    color: var(--arc-text-strong);
+  }
+
+  .arc-showroom-pill.is-active {
+    background: #1d4ed8;
+    border-color: #3b82f6;
+    color: #ffffff;
+  }
+
+  .arc-showroom-pill.is-active .arc-showroom-pill-meta,
+  .arc-showroom-pill.is-active .arc-showroom-pill-stack {
+    color: #dbeafe;
+  }
+
+  .arc-showroom-panel {
+    display: none;
+    padding-top: 1rem;
+  }
+
+  .arc-showroom-panel.is-active {
+    display: block;
+  }
+
+  .arc-showroom-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+    margin-bottom: 0.9rem;
+  }
+
+  @media (max-width: 640px) {
+    .arc-showroom-nav,
+    .arc-showroom-metrics {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .arc-showroom-metric {
+    padding: 0.65rem 0.85rem;
+    border-radius: 6px;
+    background: var(--arc-bg-elevated);
+    border: 1px solid var(--arc-border-subtle);
+  }
+
+  .arc-showroom-metric-k {
+    display: block;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--arc-text-muted);
+  }
+
+  .arc-showroom-metric-v {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--arc-text-strong);
+  }
+
+  .arc-showroom-link {
+    color: var(--arc-link);
+    text-decoration: none;
+  }
+
+  .arc-showroom-link:hover {
+    text-decoration: underline;
+  }
+
+  .arc-showroom-summary {
+    font-size: 0.86rem;
+    line-height: 1.5;
+    color: var(--arc-text-secondary);
+    margin: 0 0 1rem;
+  }
+
+  .arc-showroom-canvas-shell {
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--arc-border-subtle);
+    background: #09090b;
+  }
+
+  .arc-showroom-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.55rem 0.85rem;
+    background: var(--arc-bg-header);
+    border-bottom: 1px solid var(--arc-border-subtle);
+  }
+
+  .arc-showroom-toolbar-left,
+  .arc-showroom-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .arc-showroom-file-chip {
+    font-family: var(--sl-font-mono);
+    font-size: 0.74rem;
+    padding: 0.18rem 0.55rem;
+    border-radius: 4px;
+    background: var(--arc-bg-elevated);
+    border: 1px solid var(--arc-border-strong);
+    color: var(--arc-text-primary);
+  }
+
+  .arc-showroom-btn {
+    padding: 0.28rem 0.65rem;
+    border-radius: 5px;
+    border: 1px solid var(--arc-border-strong);
+    background: var(--arc-bg-elevated);
+    color: var(--arc-text-primary);
+    font-family: var(--sl-font);
+    font-size: 0.74rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .arc-showroom-btn:hover {
+    background: var(--arc-bg-hover);
+    border-color: var(--arc-border-hover);
+    color: var(--arc-text-strong);
+  }
+
+  .arc-showroom-btn.is-active,
+  .arc-showroom-btn--primary {
+    background: #2563eb;
+    border-color: #3b82f6;
+    color: #ffffff;
+  }
+
+  .arc-showroom-zoom-label {
+    font-family: var(--sl-font-mono);
+    font-size: 0.74rem;
+    color: var(--arc-text-muted);
+    min-width: 3rem;
+    text-align: center;
+  }
+
+  .arc-showroom-diagram-viewport {
+    overflow: auto;
+    min-height: 360px;
+    max-height: 540px;
+    padding: 1.25rem;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    background: #09090b;
+    cursor: grab;
+  }
+
+  .arc-showroom-diagram-viewport.is-panning {
+    cursor: grabbing;
+    user-select: none;
+  }
+
+  .arc-showroom-diagram-viewport[hidden],
+  .arc-showroom-code-view[hidden] {
+    display: none !important;
+  }
+
+  .arc-showroom-diagram-inner {
+    transform-origin: top center;
+    transition: transform 0.18s ease;
+    width: 100%;
+    text-align: center;
+  }
+
+  .arc-mermaid-source {
+    display: none;
+  }
+
+  .arc-showroom-code-view {
+    margin: 0;
+    padding: 1rem;
+    max-height: 460px;
+    overflow: auto;
+    font-family: var(--sl-font-mono);
+    font-size: 0.78rem;
+    background: #09090b;
+    color: #e4e4e7;
+  }
+
+  .arc-showroom-findings {
+    margin-top: 1rem;
+  }
+
+  .arc-showroom-findings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--arc-text-strong);
+  }
+
+  .arc-showroom-feedback-btn {
+    font-size: 0.75rem;
+    color: var(--arc-text-primary);
+    text-decoration: none;
+    padding: 0.25rem 0.65rem;
+    border-radius: 5px;
+    border: 1px solid var(--arc-border-strong);
+    background: var(--arc-bg-elevated);
+  }
+
+  .arc-showroom-feedback-btn:hover {
+    background: var(--arc-bg-hover);
+    border-color: var(--arc-border-hover);
+    color: var(--arc-text-strong);
+  }
+
+  .arc-showroom-findings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.65rem;
+  }
+
+  .arc-showroom-finding-card {
+    padding: 0.75rem 0.9rem;
+    border-radius: 6px;
+    background: var(--arc-bg-elevated);
+    border: 1px solid var(--arc-border-subtle);
+  }
+
+  .arc-showroom-finding-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .arc-showroom-verb {
+    font-family: var(--sl-font-mono);
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.14rem 0.45rem;
+    border-radius: 4px;
+    background: var(--arc-verb-bg);
+    border: 1px solid var(--arc-verb-border);
+    color: var(--arc-verb-text);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .arc-showroom-route {
+    font-family: var(--sl-font-mono);
+    font-size: 0.76rem;
+    color: var(--arc-text-strong);
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .arc-showroom-finding-endpoints {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    font-size: 0.74rem;
+    color: var(--arc-text-muted);
+    margin-bottom: 0.4rem;
+  }
+
+  .arc-showroom-finding-detail {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--arc-text-secondary);
+  }
+</style>

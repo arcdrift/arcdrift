@@ -1,0 +1,85 @@
+---
+title: Catching REST & Event Contract Drift
+description: How ArcDrift verifies REST endpoints and event topics across your TypeScript/Python clients and Kotlin/Java backend services.
+---
+
+import AnnotatedScreenshot from '../../../components/AnnotatedScreenshot.astro';
+import { Aside } from '@astrojs/starlight/components';
+
+In a full-stack or microservice repository, one of the most common sources of production bugs is **silent contract drift**: a backend developer renames a `@GetMapping` path or changes a response DTO field, while the TypeScript `fetch` / `axios` or Python `requests` / `httpx` client still calls the old route.
+
+Neither your Kotlin/Java compiler nor your TypeScript compiler notices the mismatch — until the request fails at runtime. ArcDrift links and verifies these cross-language contracts automatically on the canvas.
+
+---
+
+## Supported API Producers & Consumers
+
+| Language / Stack | Role on Canvas | Patterns Recognized Automatically |
+| :--- | :--- | :--- |
+| **Kotlin & Java (Spring Web / Ktor)** | `PRODUCER` (`REST`) | `@RestController`, `@Controller`, class-level `@RequestMapping("/prefix")` combined with `@GetMapping`, `@PostMapping`, `@PutMapping`, `@DeleteMapping`, `@PatchMapping`, Ktor inline routes (`get("/path")`, `post("/path")`), and serialized wire aliases (`@JsonProperty`, `@SerialName`, `@SerializedName`, `@Json`) |
+| **Kotlin & Java (Kafka / RabbitMQ)** | `CONSUMER` (`KAFKA`) | `@KafkaListener(topics = ["..."])` and `@RabbitListener(value = ...)` on classes or methods |
+| **TypeScript / React (`TS_CLIENT`)** | `CONSUMER` (`REST`) | `fetch('/api/v1/orders/${id}')`, `axios.get<OrderDto>('/api/v1/orders/${id}')`, `http.post(...)`, `api.get(...)`, `client.get(...)`, plus TypeScript `interface` / `type` DTO fields defined inline or imported across files |
+| **Python (`PYTHON_CONSUMER`)** | `PRODUCER` & `CONSUMER` (`REST`) | FastAPI `@app.get("/path")` / `@router.post("/path", response_model=...)` producers, `requests.get(...)` / `httpx.post(...)` / `client.get(...)` / `session.post(...)` consumers, plus typed Python `class` / `BaseModel` fields defined inline or imported across modules |
+
+---
+
+## Source-Inferred Wire Alias & Cross-File DTO Matching
+
+Unlike OpenAPI codegen or Pact consumer tests that require maintaining separate specification files or mock harnesses, ArcDrift extracts contract schemas directly from your source code at **IDE-time** and **agent-time**:
+
+- **Serialization Wire-Name Aliases:** When a Kotlin or Java DTO property uses Jackson (`@JsonProperty("total_cents")`), `kotlinx.serialization` (`@SerialName("order_id")`), Gson (`@SerializedName("...")`), or Moshi (`@Json(name = "...")`), ArcDrift resolves the serialized wire name and matches it against your TypeScript `interface` or Python `BaseModel` fields.
+- **Cross-File DTO Imports:** When a TypeScript client (`ordersClient.ts`) or Python consumer imports its response DTO type (`OrderWirePayload`) from a shared types file (`../types/orderTypes.ts`), ArcDrift resolves the imported schema across the repository and verifies every expected field against the backend producer.
+- **Request-Body (`@RequestBody`) Payload Verification:** On `POST`, `PUT`, and `PATCH` routes, ArcDrift extracts both the request body schema (Spring `@RequestBody`, FastAPI body models, TypeScript request payloads, and OpenAPI `*Data` `body` types) and the response DTO schema, catching breaking changes in request payloads even when response models are unchanged.
+- **Multi-Repository Contract Federation (`--export-contracts` & `--upstream-contracts`):** When your backend producer and frontend consumer live in separate repositories, run `arc scan . --export-contracts contracts.arc.json` in the producer repo and pass `--upstream-contracts contracts.arc.json` to `arc check` or `arc mcp` in the consumer repo to verify cross-repo routes and DTOs.
+
+---
+
+## How Route Matching Works
+
+ArcDrift normalizes path parameters across languages so that template variables match regardless of parameter naming:
+- TypeScript template literal: `` `/api/v1/orders/${orderId}` `` $\rightarrow$ `/api/v1/orders/{param}`
+- Python f-string: `f"{base_url}/api/v1/orders/{order_id}"` $\rightarrow$ `/api/v1/orders/{param}`
+- Spring MVC URI template: `"/api/v1/orders/{id}"` $\rightarrow$ `/api/v1/orders/{param}`
+
+### The Three Contract States on Your Canvas
+
+1. **Matched Contract (Clean Edge):**
+   - When the HTTP method, normalized path, and DTO fields match, ArcDrift draws a clean contract edge labeled with the route (e.g., `GET /api/v1/orders/{id}`).
+2. **Route Contract Mismatch (`VIOLATION`):**
+   - When a client calls a route that is a near-miss or typo of a backend endpoint (such as `GET /api/v1/ordes/{id}` vs `GET /api/v1/orders/{id}`), ArcDrift connects the two components with a red dashed violation edge (`GET /api/v1/ordes/{id} ≠ /api/v1/orders/{id}`) and displays the exact comparison on both cards.
+3. **Unresolved Endpoint (`VIOLATION`):**
+   - When a client calls an endpoint that does not exist anywhere in the backend (for example, `GET /api/v1/orders/{id}/invoice`), ArcDrift flags the consumer card directly:
+
+<AnnotatedScreenshot
+  src="/screenshots/unresolved-rest-contract.jpg"
+  alt="Unresolved REST contract violation on ordersClient.ts"
+  caption="Isolating an Unresolved Frontend REST Endpoint with the Diffs & Violations Filter"
+  badge="Unresolved Endpoint"
+  callouts={[
+    {
+      number: 1,
+      title: 'Filter: Diffs & Violations',
+      description: 'Clicking "Filter: Diffs & Violations" (or clicking the red "⛔ 1 Violation · 1 Contract" pill) hides all healthy components so you can focus immediately on the broken client.',
+      x: 60,
+      y: 3,
+      tone: 'info'
+    },
+    {
+      number: 2,
+      title: 'Clear Unresolved Route Explanation',
+      description: 'Shows the exact HTTP method and path on ordersClient.ts (GET /api/v1/orders/{id}/invoice) that has no matching backend controller endpoint.',
+      x: 31,
+      y: 40,
+      box: { left: 9, top: 18, width: 43.5, height: 53 },
+      tone: 'danger'
+    },
+    {
+      number: 3,
+      title: 'Open Code in One Click',
+      description: 'Click "Open Code" on the card to jump directly to ordersClient.ts in your IntelliJ editor, or click "Handoff to Agent" to let your AI model resolve it.',
+      x: 31,
+      y: 63,
+      tone: 'info'
+    }
+  ]}
+/>
